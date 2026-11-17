@@ -1,0 +1,24 @@
+{
+  "consecutiveReadings": 10,
+  "temperatureLow": {
+    "trigger": 18,
+    "clear": 20,
+    "enabled": true
+  },
+  "cooldownMinutes": 10,
+  "temperatureHigh": {
+    "trigger": 33,
+    "clear": 31,
+    "enabled": true
+  },
+  "humidityHigh": {
+    "trigger": 65,
+    "clear": 60,
+    "enabled": true
+  },
+  "humidityLow": {
+    "trigger": 30,
+    "clear": 35,
+    "enabled": true
+  }
+}

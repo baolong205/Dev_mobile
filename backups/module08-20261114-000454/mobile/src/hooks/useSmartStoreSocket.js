@@ -1,0 +1,96 @@
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { AppState } from 'react-native';
+import { api } from '../services/apiService';
+import { getSocket } from '../services/socketService';
+import { CONFIG_ERROR, STALE_MS } from '../constants/config';
+import { isStale, mergeReading, normalizeStatus } from '../utils/formatSensor';
+
+export function useSmartStoreSocket() {
+  const [reading, setReading] = useState(null);
+  const [connection, setConnection] = useState('connecting');
+  const [system, setSystem] = useState(null);
+  const [backendReachable, setBackendReachable] = useState(null);
+  const [statusTime, setStatusTime] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+  const [error, setError] = useState(CONFIG_ERROR);
+  const [socketError, setSocketError] = useState(null);
+  const [now, setNow] = useState(Date.now());
+  const mounted = useRef(false);
+  const statusRevision = useRef(0);
+  const busy = useRef(false);
+  const controllers = useRef(new Set());
+  const generation = useRef(0);
+  const acceptReading = useCallback(value => setReading(current => mergeReading(current, value)), []);
+  const refresh = useCallback(async () => {
+    if (!mounted.current || busy.current) return;
+    busy.current = true;
+    const epoch = generation.current;
+    setRefreshing(true);
+    const controller = new AbortController(); controllers.current.add(controller);
+    const revision = statusRevision.current;
+    const results = await Promise.allSettled([api.latest(controller.signal), api.health(controller.signal)]);
+    controllers.current.delete(controller);
+    if (!mounted.current || epoch !== generation.current) return;
+    busy.current = false;
+    const [latest, health] = results;
+    if (latest.status === 'fulfilled' && latest.value) acceptReading(latest.value);
+    // A delayed REST response must not overwrite a newer socket status/disconnect.
+    if (revision === statusRevision.current) {
+      if (health.status === 'fulfilled') {
+        setSystem(normalizeStatus(health.value)); setBackendReachable(true); setStatusTime(new Date().toISOString());
+      } else { setBackendReachable(false); setSystem(null); }
+    }
+    setError(latest.status === 'rejected' ? latest.reason.message : health.status === 'rejected' ? health.reason.message : null);
+    setLoading(false); setRefreshing(false);
+  }, [acceptReading]);
+  useEffect(() => {
+    mounted.current = true;
+    generation.current++;
+    busy.current = false;
+    const socket = getSocket();
+    const connected = () => {
+      statusRevision.current++; setConnection('connected'); setBackendReachable(true);
+      setSocketError(null); void refresh();
+    };
+    const disconnected = () => {
+      statusRevision.current++; setConnection('disconnected'); setSystem(null); setBackendReachable(null);
+      setSocketError('Kết nối realtime đã ngắt. Đang chờ kết nối lại.');
+    };
+    const failed = () => {
+      statusRevision.current++; setConnection('reconnecting'); setSystem(null); setBackendReachable(null);
+      setSocketError('Chưa kết nối được realtime. Ứng dụng sẽ tự thử lại.');
+    };
+    const retry = () => setConnection('reconnecting');
+    const status = value => {
+      const normalized = normalizeStatus(value);
+      if (!normalized || !socket?.connected) return;
+      statusRevision.current++; setSystem(normalized); setBackendReachable(true); setStatusTime(new Date().toISOString());
+    };
+    if (socket) {
+      socket.on('connect', connected); socket.on('disconnect', disconnected); socket.on('connect_error', failed);
+      socket.on('sensor:update', acceptReading); socket.on('sensor:latest', acceptReading); socket.on('system:status', status);
+      socket.io.on('reconnect_attempt', retry);
+      if (socket.connected) connected(); else socket.connect();
+    } else setConnection('disconnected');
+    void refresh();
+    const timer = setInterval(() => setNow(Date.now()), 1000);
+    const poll = setInterval(() => { void refresh(); }, 15000);
+    const subscription = AppState.addEventListener('change', state => {
+      if (state === 'active') {
+        setNow(Date.now()); if (socket && !socket.connected) socket.connect(); void refresh();
+      }
+    });
+    return () => {
+      mounted.current = false; generation.current++; clearInterval(timer); clearInterval(poll); subscription.remove();
+      controllers.current.forEach(controller => controller.abort()); controllers.current.clear();
+      if (socket) {
+        socket.off('connect', connected); socket.off('disconnect', disconnected); socket.off('connect_error', failed);
+        socket.off('sensor:update', acceptReading); socket.off('sensor:latest', acceptReading); socket.off('system:status', status);
+        socket.io.off('reconnect_attempt', retry); socket.disconnect();
+      }
+    };
+  }, [acceptReading, refresh]);
+  return { reading, connection, system, backendReachable, statusTime, loading, refreshing,
+    error, socketError, refresh, stale: isStale(reading, now, STALE_MS) };
+}

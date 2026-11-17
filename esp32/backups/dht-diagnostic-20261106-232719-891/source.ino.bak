@@ -1,0 +1,111 @@
+/*
+ * SmartStore - MODULE 02: Kiểm tra DHT11, PIR và LED độc lập.
+ * Board: ESP32 Dev Module. Serial Monitor: 115200 baud.
+ * Thư viện: DHT sensor library by Adafruit, Adafruit Unified Sensor.
+ * Không dùng Wi-Fi, MQTT, Socket.IO hoặc API.
+ *
+ * QUAN TRỌNG: Không biên dịch cả thư mục esp32 vì sketch MQTT cũng có
+ * setup()/loop(). Chạy Prepare-TestSketch.ps1 rồi mở bản sao riêng trong
+ * build/esp32_smartstore_test/esp32_smartstore_test.ino.
+ */
+#include <Arduino.h>
+#include <DHT.h>
+
+constexpr uint8_t DHT_PIN = 4;          // DATA; VCC -> 3V3, GND -> GND.
+constexpr uint8_t PIR_PIN = 35;         // OUT; VCC -> VIN 5V, GND -> GND.
+constexpr uint8_t LED_GREEN_PIN = 25;   // Qua điện trở riêng 220-330 ohm.
+constexpr uint8_t LED_RED_PIN = 26;     // Qua điện trở riêng 220-330 ohm.
+constexpr unsigned long STARTUP_WAIT_MS = 5000UL;
+constexpr unsigned long DHT_INTERVAL_MS = 2000UL;
+
+DHT dht(DHT_PIN, DHT11);
+
+unsigned long startupAt = 0;
+unsigned long lastDhtReadAt = 0;
+bool startupComplete = false;
+bool hasPirSample = false;
+bool previousMotion = false;
+
+// LED luôn chỉ phụ thuộc PIR, không phụ thuộc kết quả DHT11.
+void updateLeds(bool motion) {
+  digitalWrite(LED_GREEN_PIN, motion ? HIGH : LOW);
+  digitalWrite(LED_RED_PIN, motion ? LOW : HIGH);
+}
+
+void printPirAndLeds(bool motion) {
+  Serial.print("PIR=");
+  Serial.print(motion ? "HIGH (CO CHUYEN DONG)" : "LOW (KHONG CHUYEN DONG)");
+  Serial.print(" | LED xanh=");
+  Serial.print(motion ? "BAT" : "TAT");
+  Serial.print(" | LED do=");
+  Serial.println(motion ? "TAT" : "BAT");
+}
+
+void setup() {
+  Serial.begin(115200);
+
+  // GPIO35 chỉ dùng INPUT, tuyệt đối không dùng INPUT_PULLUP.
+  pinMode(PIR_PIN, INPUT);
+  pinMode(LED_GREEN_PIN, OUTPUT);
+  pinMode(LED_RED_PIN, OUTPUT);
+  digitalWrite(LED_GREEN_PIN, LOW);
+  digitalWrite(LED_RED_PIN, LOW);
+  dht.begin();
+
+  Serial.println("\n=== SmartStore - MODULE 02 ===");
+  Serial.println("Cho khoi dong 5 giay; hai LED tam tat.");
+  Serial.println("Luu y: PIR HC-SR501 co the can 30-60 giay de on dinh.");
+  startupAt = millis();
+}
+
+void loop() {
+  const unsigned long now = millis();
+
+  // Chờ khởi động không chặn bằng millis(), không dùng delay dài.
+  if (!startupComplete) {
+    if (now - startupAt < STARTUP_WAIT_MS) {
+      return;
+    }
+    startupComplete = true;
+    // Cho phép lấy mẫu đầu tiên ngay sau thời gian khởi động.
+    lastDhtReadAt = now - DHT_INTERVAL_MS;
+    Serial.println("Bat dau doc cam bien va dieu khien LED theo PIR.");
+  }
+
+  // Đọc PIR và cập nhật LED mỗi vòng lặp, không phải chờ lần đọc DHT.
+  const bool motion = digitalRead(PIR_PIN) == HIGH;
+  updateLeds(motion);
+
+  // Báo ngay trạng thái đầu tiên và mỗi lần PIR thay đổi.
+  if (!hasPirSample || motion != previousMotion) {
+    printPirAndLeds(motion);
+    previousMotion = motion;
+    hasPirSample = true;
+  }
+
+  // Phép trừ unsigned vẫn hoạt động khi millis() tràn số.
+  if (now - lastDhtReadAt >= DHT_INTERVAL_MS) {
+    lastDhtReadAt = now;
+    const float humidity = dht.readHumidity();
+    const float temperatureC = dht.readTemperature(); // Mặc định là độ C.
+
+    // Cập nhật lại PIR sau thao tác đọc DHT đồng bộ ngắn của thư viện.
+    const bool currentMotion = digitalRead(PIR_PIN) == HIGH;
+    updateLeds(currentMotion);
+    previousMotion = currentMotion;
+    hasPirSample = true;
+
+    Serial.print("[DHT11] ");
+    if (isnan(temperatureC) || isnan(humidity)) {
+      // Không thay NaN bằng 0 hoặc số đo cũ; vẫn điều khiển LED theo PIR.
+      Serial.print("LOI: doc that bai (NaN), khong co so lieu hop le | ");
+    } else {
+      Serial.print("Nhiet do=");
+      Serial.print(temperatureC, 1);
+      Serial.print(" C | Do am=");
+      Serial.print(humidity, 1);
+      Serial.print(" % | ");
+    }
+    printPirAndLeds(currentMotion);
+  }
+}

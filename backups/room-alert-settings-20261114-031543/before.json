@@ -1,0 +1,30 @@
+{
+  "success": true,
+  "data": {
+    "deviceId": "smartstore-esp32",
+    "sensorVerified": true,
+    "alertsEnabled": true,
+    "temperatureHigh": {
+      "enabled": true,
+      "trigger": 35,
+      "clear": 33
+    },
+    "temperatureLow": {
+      "enabled": true,
+      "trigger": 25,
+      "clear": 30
+    },
+    "humidityHigh": {
+      "enabled": true,
+      "trigger": 80,
+      "clear": 75
+    },
+    "humidityLow": {
+      "enabled": true,
+      "trigger": 19,
+      "clear": 20
+    },
+    "consecutiveReadings": 3,
+    "cooldownMinutes": 1
+  }
+}
