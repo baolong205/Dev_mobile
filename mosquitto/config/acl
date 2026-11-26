@@ -1,0 +1,17 @@
+# Mỗi tài khoản chỉ được đọc/ghi đúng topic cần thiết.
+
+# Backend: nhận telemetry + ACK, gửi lệnh LED.
+user backend
+topic read smartstore/sensors/data
+topic read smartstore/led/ack
+topic write smartstore/led/command
+
+# Thiết bị ESP32: gửi telemetry + ACK, nhận lệnh LED.
+user esp32
+topic write smartstore/sensors/data
+topic write smartstore/led/ack
+topic read smartstore/led/command
+
+# Healthcheck của Docker.
+user healthcheck
+topic write smartstore/health

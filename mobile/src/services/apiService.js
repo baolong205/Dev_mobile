@@ -1,6 +1,7 @@
 import { API_URL, CONFIG_ERROR } from '../constants/config.js';
 import { normalizeReading, normalizeStatus } from '../utils/formatSensor.js';
 import { rangeQuery } from '../utils/timeRange.js';
+import { authHeaders, session } from './session.js';
 
 async function request(route, options = {}) {
   if (CONFIG_ERROR) throw new Error(CONFIG_ERROR);
@@ -10,8 +11,12 @@ async function request(route, options = {}) {
   if (options.signal?.aborted) controller.abort();
   const timer = setTimeout(abort, 8000);
   try {
-    const response = await fetch(`${API_URL}/api/${route}`, { signal: controller.signal });
+    const response = await fetch(`${API_URL}/api/${route}`, { signal: controller.signal, headers: authHeaders() });
     const body = await response.json();
+    if (response.status === 401) {
+      session.expire();
+      throw Object.assign(new Error('Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.'), { status: 401 });
+    }
     if (options.empty404 && response.status === 404 && body.error?.code === 'NO_SENSOR_DATA') return null;
     if (options.health && (response.status === 200 || response.status === 503) && normalizeStatus(body.data)) return body.data;
     if (!response.ok || body.success !== true) {

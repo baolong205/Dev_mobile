@@ -1,5 +1,8 @@
 name: smartstore
 
+# Cần file .env ở thư mục gốc (xem .env.example) và mosquitto/config/passwd
+# (tạo bằng scripts/mqtt-users.ps1) trước khi chạy: docker compose up -d --build
+
 services:
   mqtt:
     image: eclipse-mosquitto:2
@@ -9,9 +12,11 @@ services:
     volumes:
       - ./mosquitto/config:/mosquitto/config:ro
       - mosquitto_data:/mosquitto/data
+    environment:
+      MQTT_HEALTHCHECK_PASSWORD: ${MQTT_HEALTHCHECK_PASSWORD:?Set MQTT_HEALTHCHECK_PASSWORD in .env}
     restart: unless-stopped
     healthcheck:
-      test: ["CMD", "mosquitto_pub", "-h", "127.0.0.1", "-p", "1883", "-t", "smartstore/health", "-m", "healthcheck", "-q", "1"]
+      test: ["CMD-SHELL", "mosquitto_pub -h 127.0.0.1 -p 1883 -u healthcheck -P \"$$MQTT_HEALTHCHECK_PASSWORD\" -t smartstore/health -m ok -q 1"]
       interval: 30s
       timeout: 5s
       retries: 3
@@ -20,10 +25,40 @@ services:
   mongo:
     image: mongo:7
     container_name: smartstore-mongo
+    # Chỉ mở cho máy host; backend trong compose kết nối qua mạng nội bộ.
     ports:
-      - "27017:27017"
+      - "127.0.0.1:27017:27017"
     volumes:
       - mongo_data:/data/db
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "mongosh", "--quiet", "--eval", "db.adminCommand('ping').ok"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 20s
+
+  backend:
+    build: ./backend
+    container_name: smartstore-backend
+    depends_on:
+      mqtt:
+        condition: service_healthy
+      mongo:
+        condition: service_healthy
+    ports:
+      - "${BACKEND_PORT:-3000}:3000"
+    environment:
+      PORT: 3000
+      NODE_ENV: development
+      MQTT_URL: mqtt://mqtt:1883
+      MQTT_USERNAME: backend
+      MQTT_PASSWORD: ${MQTT_BACKEND_PASSWORD:?Set MQTT_BACKEND_PASSWORD in .env}
+      MONGO_URI: mongodb://mongo:27017/smartstore
+      JWT_SECRET: ${JWT_SECRET:?Set JWT_SECRET in .env}
+      ADMIN_USERNAME: ${ADMIN_USERNAME:-admin}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD:-}
+      CORS_ORIGIN: ${CORS_ORIGIN:-}
     restart: unless-stopped
 
 volumes:

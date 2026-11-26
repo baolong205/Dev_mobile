@@ -1,0 +1,89 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  backend:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+    services:
+      mongo:
+        image: mongo:7
+        ports: ["27017:27017"]
+    env:
+      # Bật các test cần MongoDB thật (bỏ qua nếu biến không có).
+      SMARTSTORE_TEST_MONGO_URI: mongodb://127.0.0.1:27017/smartstore_module09_test_c1
+      STORE_WATCH_TEST_MONGO: "1"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: backend/package-lock.json
+      - run: npm ci
+      # Các test Mongo dùng chung một database tạm => chạy tuần tự.
+      - run: npm test -- --test-concurrency=1
+
+  backend-image:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build backend Docker image
+        run: docker build -t smartstore-backend:ci backend
+      - name: Validate compose file
+        env:
+          MQTT_HEALTHCHECK_PASSWORD: ci-placeholder
+          MQTT_BACKEND_PASSWORD: ci-placeholder
+          JWT_SECRET: ci-placeholder-ci-placeholder-ci-placeholder
+        run: docker compose config -q
+
+  mobile:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: mobile
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: mobile/package-lock.json
+      - run: npm ci
+      - run: npm test
+      - name: Bundle check (Android)
+        env:
+          EXPO_PUBLIC_API_URL: http://192.168.1.10:3000
+        run: npx expo export --platform android --output-dir /tmp/expo-export
+
+  firmware:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: arduino/setup-arduino-cli@v2
+      - name: Install ESP32 core and libraries
+        run: |
+          arduino-cli config init
+          arduino-cli config add board_manager.additional_urls https://espressif.github.io/arduino-esp32/package_esp32_index.json
+          arduino-cli core update-index
+          arduino-cli core install esp32:esp32
+          arduino-cli lib install PubSubClient "DHT sensor library" "Adafruit Unified Sensor" ArduinoJson
+      - name: Compile firmware
+        run: |
+          mkdir -p build/esp32_smartstore_mqtt
+          cp esp32/esp32_smartstore_mqtt.ino build/esp32_smartstore_mqtt/
+          cp esp32/smartstore_config.example.h build/esp32_smartstore_mqtt/smartstore_config.h
+          arduino-cli compile --fqbn esp32:esp32:esp32 build/esp32_smartstore_mqtt

@@ -9,6 +9,11 @@ const { getLatest } = require('./services/sensorService');
 
 async function main() {
   const config = loadConfig();
+  const auth = require('./services/authService').createAuth({ secret: config.auth.secret, expiresIn: config.auth.expiresIn });
+  mongoose.connection.on('connected', () => {
+    auth.ensureAdmin(config.auth.adminUsername, config.auth.adminPassword)
+      .catch(() => console.error('[AUTH] could not create initial admin user'));
+  });
   let sockets;
   const watch = require('./services/storeWatch').createStoreWatch(undefined, () => sockets?.publishStoreChange());
   const alerts = require('./services/alertRuntime').createAlertRuntime({ emit: (event, data) => sockets?.publishAlert(event, data) });
@@ -22,9 +27,10 @@ async function main() {
     onLedState: state => sockets?.publishLedState(state),
     onStatusChange: () => sockets?.publishStatus()
   });
-  const server = http.createServer(createApp(mqtt.status, config.cors, alerts, watch));
+  const server = http.createServer(createApp(mqtt.status, config.cors, alerts, watch,
+    { auth, lanOnlyWrites: config.lanOnlyWrites, trustProxy: config.trustProxy }));
   sockets = createSocketServer(server, {
-    cors: config.cors, database: mongoose.connection, getLatest, leds: mqtt.leds, getQuality: alerts.quality,
+    cors: config.cors, auth, database: mongoose.connection, getLatest, leds: mqtt.leds, getQuality: alerts.quality,
     getStatus: () => {
       const state = mqtt.status();
       const mongodb = { connected: mongoose.connection.readyState === 1, readyState: mongoose.connection.readyState };

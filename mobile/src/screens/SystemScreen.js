@@ -4,10 +4,12 @@ import Constants from 'expo-constants';
 import { api } from '../services/apiService';
 import { API_URL } from '../constants/config';
 import { useSmartStore } from '../hooks/SmartStoreContext';
-import { Card, PageHeader, Row, styles } from '../components/Common';
+import { Button, Card, PageHeader, Row, styles } from '../components/Common';
+import { useAuth } from '../hooks/AuthContext';
 import ConnectionStatus from '../components/ConnectionStatus';
 import { formatNumber, formatTime } from '../utils/formatSensor';
 export default function SystemScreen() {
+  const auth = useAuth();
   const state = useSmartStore(); const [stats, setStats] = useState(null); const [statsError, setStatsError] = useState(null);
   useEffect(() => {
     const controller = new AbortController(); let alive = true;
@@ -16,6 +18,12 @@ export default function SystemScreen() {
   }, [state.statusTime]);
   return <ScrollView style={styles.page} contentContainerStyle={styles.content} refreshControl={<RefreshControl refreshing={state.refreshing} onRefresh={state.refresh} />}>
     <PageHeader title="Cài đặt SmartStore" icon="settings-outline" subtitle="Thông tin kết nối và hệ thống IoT tại cửa hàng." />
+    <Card><Text style={styles.heading}>Tài khoản</Text>
+      <Row label="Đăng nhập với" value={auth.user?.username || '--'} />
+      <Row label="Vai trò" value={auth.isAdmin ? 'Quản trị (admin)' : 'Chỉ xem (viewer)'} />
+      {!auth.isAdmin ? <Text style={styles.body}>Tài khoản chỉ xem không thể điều khiển LED hay thay đổi cấu hình.</Text> : null}
+      <Button title="Đăng xuất" icon="log-out-outline" variant="danger" onPress={auth.logout} />
+    </Card>
     <ConnectionStatus state={state} />
     <Card><Text style={styles.heading}>Thông tin kết nối</Text>
       <Row label="Backend HTTP" value={state.backendReachable === null ? 'Chưa xác định' : state.backendReachable ? 'Có phản hồi' : 'Không truy cập được'} />

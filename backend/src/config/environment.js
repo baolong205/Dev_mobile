@@ -20,7 +20,15 @@ function loadConfig(env = process.env) {
   if (origins.some(origin => origin !== '*' && !/^https?:\/\/[^/]+$/.test(origin))) {
     throw new Error('CORS_ORIGIN must contain HTTP origins without paths');
   }
+  const jwtSecret = env.JWT_SECRET || '';
+  if (jwtSecret.length < 32) throw new Error('JWT_SECRET must be at least 32 characters');
+  const adminUsername = env.ADMIN_USERNAME || 'admin';
+  if (!/^[a-z0-9._-]{3,32}$/i.test(adminUsername)) throw new Error('Invalid ADMIN_USERNAME');
+  const lanOnlyWrites = env.LAN_ONLY_WRITES !== 'false';
   return { port, mqttUrl, mongoUri, topic, debugSensor: env.DEBUG_SENSOR === 'true',
+    mqttUsername: env.MQTT_USERNAME || undefined, mqttPassword: env.MQTT_PASSWORD || undefined,
+    auth: { secret: jwtSecret, expiresIn: env.JWT_EXPIRES_IN || '12h', adminUsername, adminPassword: env.ADMIN_PASSWORD || '' },
+    lanOnlyWrites, trustProxy: env.TRUST_PROXY === 'true' ? 1 : false,
     cors: { origin: !origins.length || origins.includes('*') ? true : origins } };
 }
 module.exports = { loadConfig };

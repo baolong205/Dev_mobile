@@ -1,11 +1,32 @@
 const express = require('express');
 const cors = require('cors');
 const mongoose = require('mongoose');
+const { rateLimit } = require('express-rate-limit');
 const sensorRoutes = require('./routes/sensorRoutes');
+const { createAuthRoutes } = require('./routes/authRoutes');
+const { trustedAddress } = require('./services/ledService');
+const { httpError } = require('./services/sensorService');
 
-function createApp(mqttStatus = () => ({ connected: false, subscribed: false }), corsOptions = { origin: true }, alerts, watch) {
+const READ_METHODS = new Set(['GET', 'HEAD', 'OPTIONS']);
+
+function limiter({ windowMs, limit, message }) {
+  return rateLimit({
+    windowMs, limit, standardHeaders: 'draft-7', legacyHeaders: false,
+    // Giới hạn theo người dùng nếu đã đăng nhập, nếu không thì theo IP.
+    keyGenerator: req => req.user?.id || req.ip,
+    handler: (_req, res) => res.status(429).json({ success: false, error: { code: 'RATE_LIMIT', message } })
+  });
+}
+
+/**
+ * options.auth: kết quả createAuth(). Khi có, mọi /api (trừ health, login) cần JWT
+ * và mọi thao tác ghi cần vai trò admin. Bỏ trống chỉ dùng cho test đơn vị.
+ */
+function createApp(mqttStatus = () => ({ connected: false, subscribed: false }), corsOptions = { origin: true }, alerts, watch, options = {}) {
+  const { auth, lanOnlyWrites = true } = options;
   const app = express();
   app.disable('x-powered-by');
+  app.set('trust proxy', options.trustProxy ?? false);
   app.use(cors(corsOptions));
   app.use(express.json({ limit: '16kb' }));
   app.get('/api/health', (_req, res) => {
@@ -17,14 +38,22 @@ function createApp(mqttStatus = () => ({ connected: false, subscribed: false }),
       status: ready ? 'ready' : 'degraded', mongodb, mqtt
     } });
   });
-  app.use('/api/sensors', sensorRoutes);
-  if (watch) {
-    const handle = fn => async (req, res, next) => { try { res.json({ success: true, data: (await fn(req)) ?? null }); } catch (error) { next(error); } };
-    const lanWrite = (req, res, next) => require('./services/ledService').trustedAddress(req.socket.remoteAddress) ? next() : res.status(403).json({ success: false, error: { message: 'Chỉ thay đổi từ mạng LAN tin cậy.' } });
-    app.get('/api/store-watch', handle(() => watch.snapshot()));
-    app.put('/api/store-watch/mode', lanWrite, handle(req => watch.change(req.body?.mode)));
-    app.patch('/api/store-watch/incidents/:id', lanWrite, handle(req => watch.review(req.params.id, req.body?.note)));
+
+  if (auth) {
+    const loginLimiter = limiter({ windowMs: 15 * 60 * 1000, limit: 10, message: 'Đăng nhập sai quá nhiều lần. Thử lại sau 15 phút.' });
+    app.use('/api/auth', createAuthRoutes(auth, loginLimiter));
+    app.use('/api', auth.authenticate);
   }
+  const writeLimiter = limiter({ windowMs: 60 * 1000, limit: 60, message: 'Thao tác quá nhanh. Vui lòng chờ.' });
+  app.use('/api', (req, res, next) => {
+    if (READ_METHODS.has(req.method)) return next();
+    if (lanOnlyWrites && !trustedAddress(req.socket.remoteAddress)) return next(httpError(403, 'LAN_ONLY', 'Chỉ thay đổi từ mạng LAN tin cậy.'));
+    const guard = auth ? auth.requireRole('admin') : (_q, _s, done) => done();
+    guard(req, res, error => (error ? next(error) : writeLimiter(req, res, next)));
+  });
+
+  app.use('/api/sensors', sensorRoutes);
+  if (watch) app.use('/api/store-watch', require('./routes/storeWatchRoutes').createStoreWatchRoutes(watch));
   app.use('/api', require('./routes/alertRoutes').createAlertRoutes(alerts));
   app.use((_req, res) => res.status(404).json({ success: false, error: { code: 'NOT_FOUND', message: 'Route not found' } }));
   app.use((error, _req, res, _next) => {
