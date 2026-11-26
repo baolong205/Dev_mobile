@@ -22,10 +22,6 @@ jobs:
       mongo:
         image: mongo:7
         ports: ["27017:27017"]
-    env:
-      # Bật các test cần MongoDB thật (bỏ qua nếu biến không có).
-      SMARTSTORE_TEST_MONGO_URI: mongodb://127.0.0.1:27017/smartstore_module09_test_c1
-      STORE_WATCH_TEST_MONGO: "1"
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -34,8 +30,19 @@ jobs:
           cache: npm
           cache-dependency-path: backend/package-lock.json
       - run: npm ci
-      # Các test Mongo dùng chung một database tạm => chạy tuần tự.
-      - run: npm test -- --test-concurrency=1
+      # Test đơn vị + store watch (tự tạo database ngẫu nhiên).
+      - run: npm test
+        env:
+          STORE_WATCH_TEST_MONGO: "1"
+      # Mỗi test Mongo dùng database riêng vì chúng xóa database khi kết thúc.
+      - name: Alerts with MongoDB
+        run: node --test test/alertsMongo.test.js
+        env:
+          SMARTSTORE_TEST_MONGO_URI: mongodb://127.0.0.1:27017/smartstore_module09_test_a1
+      - name: Reports with MongoDB
+        run: node --test test/reportsMongo.test.js
+        env:
+          SMARTSTORE_TEST_MONGO_URI: mongodb://127.0.0.1:27017/smartstore_module09_test_b2
 
   backend-image:
     runs-on: ubuntu-latest
