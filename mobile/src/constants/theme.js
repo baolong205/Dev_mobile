@@ -20,7 +20,7 @@ export const colors = {
   lip: '#E8EBEF',
 };
 // Dải màu ánh xà cừ cho thẻ chính (xanh băng → tím khói → hồng đào).
-export const iridescent = ['#DCE6F5', '#E9E4F4', '#F7DDE6', '#FBD2C9'];
+export const iridescent = ['#D2DFF5', '#E3DCF4', '#F5D2E0', '#F9C3B6'];
 export const fonts = {
   light: 'BeVietnamPro_300Light',
   regular: 'BeVietnamPro_400Regular',

@@ -86,7 +86,8 @@ export function Row({ label, value }) {
 }
 
 export const styles = StyleSheet.create({
-  page: { flex: 1, backgroundColor: c.background }, content: { padding: spacing.md, paddingBottom: 32, gap: spacing.md },
+  // Trong suốt để lộ nền chung (AppBackground) phía sau.
+  page: { flex: 1, backgroundColor: 'transparent' }, content: { padding: spacing.md, paddingBottom: 32, gap: spacing.md },
   card: { backgroundColor: c.card, padding: spacing.lg, borderRadius: radius.lg, gap: spacing.sm, ...shadow },
   heading: { fontSize: typography.heading, fontFamily: f.medium, color: c.text, letterSpacing: -0.2 },
   title: { fontSize: typography.title, fontFamily: f.regular, color: c.text, letterSpacing: -0.6 },

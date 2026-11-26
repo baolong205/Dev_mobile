@@ -20,7 +20,7 @@ export default function BottomTabBar({ state, descriptors, navigation }) {
   })}</View>;
 }
 const s = StyleSheet.create({
-  bar: { flexDirection: 'row', paddingHorizontal: 6, paddingTop: 8, backgroundColor: c.card, borderTopWidth: 1, borderColor: c.hairline },
+  bar: { flexDirection: 'row', paddingHorizontal: 6, paddingTop: 8, backgroundColor: '#FFFFFFE6', borderTopWidth: 1, borderColor: '#FFFFFF' },
   tab: { flex: 1, minWidth: 0, minHeight: 52, alignItems: 'center', justifyContent: 'center', gap: 3 },
   label: { fontSize: 11 },
 });
