@@ -6,10 +6,15 @@ import { CONFIG_ERROR, STALE_MS } from '../constants/config';
 import { isStale, mergeReading, normalizeStatus } from '../utils/formatSensor';
 import { normalizeLedState, canControlLed } from '../utils/ledState';
 import { createMotionDetector } from '../utils/motionNotice';
+import { createAvailabilityTracker } from '../utils/deviceAvailability';
+import { describeCommand } from '../utils/liveStore';
 
 export function useSmartStoreSocket() {
   const [reading, setReading] = useState(null);
   const [motionNotice, setMotionNotice] = useState(null);
+  const [deviceNotice, setDeviceNotice] = useState(null);
+  const availability = useRef(createAvailabilityTracker(STALE_MS));
+  const dismissDeviceNotice = useCallback(id => setDeviceNotice(current => current?._id === id ? null : current), []);
   const dismissMotionNotice = useCallback(id => setMotionNotice(current => current?._id === id ? null : current), []);
   const [connection, setConnection] = useState('connecting');
   const [system, setSystem] = useState(null);
@@ -24,6 +29,12 @@ export function useSmartStoreSocket() {
   const [commandPending, setCommandPending] = useState(false);
   const [commandMessage, setCommandMessage] = useState(null);
   const pendingCommand = useRef(null);
+  const [events, setEvents] = useState([]);
+  const eventSequence = useRef(0);
+  const log = useCallback((message, at = new Date().toISOString()) => {
+    const event = { id: ++eventSequence.current, message, at };
+    setEvents(current => [event, ...current].slice(0, 5));
+  }, []);
   const commandTimer = useRef(null);
   const mounted = useRef(false);
   const statusRevision = useRef(0);
@@ -32,6 +43,11 @@ export function useSmartStoreSocket() {
   const generation = useRef(0);
   const acceptReading = useCallback(value => setReading(current => mergeReading(current, value)), []);
   const controlReady = canControlLed({ connection, system, state: ledState, now });
+  useEffect(() => {
+    const notice = availability.current.check({ reading, connection, now });
+    if (AppState.currentState === 'active' && notice) setDeviceNotice(notice);
+    if (connection !== 'connected' || (reading && !isStale(reading, now, STALE_MS))) setDeviceNotice(null);
+  }, [reading, connection, now]);
   const sendLedCommand = useCallback(payload => {
     const socket = getSocket();
     if (!socket?.connected || !controlReady || pendingCommand.current) {
@@ -39,14 +55,16 @@ export function useSmartStoreSocket() {
     }
     const transaction = { payload, requestId: null };
     pendingCommand.current = transaction; setCommandPending(true); setCommandMessage('Đang gửi lệnh…');
+    log(`Đã gửi lệnh ${describeCommand(payload)}`);
     socket.emit('led:command', payload, accepted => {
       if (pendingCommand.current === transaction && typeof accepted?.requestId === 'string') transaction.requestId = accepted.requestId;
     });
     commandTimer.current = setTimeout(() => {
       pendingCommand.current = null; setCommandPending(false);
+      log('Hết thời gian chờ xác nhận từ ESP32');
       setCommandMessage('Quá thời gian chờ. Chưa xác định lệnh có được áp dụng; kiểm tra trạng thái thực tế.');
     }, 9500);
-  }, [controlReady]);
+  }, [controlReady, log]);
   const refresh = useCallback(async () => {
     if (!mounted.current || busy.current) return;
     busy.current = true;
@@ -79,7 +97,7 @@ export function useSmartStoreSocket() {
       acceptReading(value);
       if (AppState.currentState !== 'active') { motionDetector.reset(); return; }
       const notice = motionDetector.sample(value);
-      if (notice) setMotionNotice(notice);
+      if (notice) { setMotionNotice(notice); log('PIR phát hiện chuyển động', notice.receivedAt); }
     };
     const connected = () => {
       motionDetector.reset(); setMotionNotice(null);
@@ -87,6 +105,7 @@ export function useSmartStoreSocket() {
       setSocketError(null); void refresh();
     };
     const disconnected = () => {
+      if (pendingCommand.current) log('Mất kết nối khi đang chờ xác nhận lệnh');
       motionDetector.reset(); setMotionNotice(null);
       clearTimeout(commandTimer.current); pendingCommand.current = null; setCommandPending(false); setLedState(null);
       setCommandMessage('Mất kết nối. Lệnh đang chờ (nếu có) chưa được xác nhận.');
@@ -116,6 +135,7 @@ export function useSmartStoreSocket() {
       const command = transaction.payload;
       clearTimeout(commandTimer.current); pendingCommand.current = null; setCommandPending(false);
       const matches = value.mode === command.mode && ['ledGreen', 'ledRed'].every(key => !(key in command) || value[key] === command[key]);
+      log(value.status === 'applied' && matches ? `ESP32 xác nhận ${describeCommand(command)}` : `Chưa xác nhận lệnh ${describeCommand(command)}`);
       setCommandMessage(value.status === 'applied' && matches ? 'ESP32 đã xác nhận áp dụng lệnh.' :
         value.status === 'applied' ? 'Phản hồi không khớp lệnh. Đang hiển thị trạng thái thực tế.' : value.message || 'Lệnh chưa được xác nhận.');
       // No optimistic switch update: led:state/telemetry remains source of truth.
@@ -132,6 +152,7 @@ export function useSmartStoreSocket() {
     const poll = setInterval(() => { void refresh(); }, 15000);
     const subscription = AppState.addEventListener('change', state => {
       motionDetector.reset(); setMotionNotice(null);
+      availability.current.reset(); setDeviceNotice(null);
       if (state === 'active') {
         setNow(Date.now()); if (socket && !socket.connected) socket.connect(); void refresh();
       }
@@ -147,8 +168,8 @@ export function useSmartStoreSocket() {
         socket.io.off('reconnect_attempt', retry); socket.disconnect();
       }
     };
-  }, [acceptReading, refresh]);
-  return { reading, connection, system, backendReachable, statusTime, loading, refreshing,
-    ledState, commandPending, commandMessage, sendLedCommand, controlReady, motionNotice, dismissMotionNotice,
+  }, [acceptReading, refresh, log]);
+  return { events, reading, connection, system, backendReachable, statusTime, loading, refreshing,
+    ledState, commandPending, commandMessage, sendLedCommand, controlReady, motionNotice, dismissMotionNotice, deviceNotice, dismissDeviceNotice,
     error, socketError, refresh, stale: isStale(reading, now, STALE_MS) };
 }

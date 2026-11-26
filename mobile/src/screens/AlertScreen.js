@@ -6,8 +6,12 @@ import AlertCard from '../components/AlertCard';
 import SensorQualityBadge from '../components/SensorQualityBadge';
 import { alertsApi } from '../services/alertService';
 import { alertLabels, mergeAlerts } from '../utils/alertData';
+import PeriodSelector from '../components/PeriodSelector';
+import { timeRange } from '../utils/timeRange';
 export default function AlertScreen({ navigation }) {
   const { alerts, connection, stale } = useSmartStore();
+  const [period, setPeriod] = useState('day');
+  const range = useRef(timeRange());
   const [rows, setRows] = useState([]), [type, setType] = useState(''), [page, setPage] = useState(0), [pages, setPages] = useState(0);
   const [busy, setBusy] = useState(false), [error, setError] = useState(null), [reload, setReload] = useState(0);
   const request = useRef(null), inFlight = useRef(false), currentPage = useRef(0);
@@ -15,7 +19,8 @@ export default function AlertScreen({ navigation }) {
     if (inFlight.current && !reset) return;
     inFlight.current = true; setBusy(true); setError(null);
     try {
-      const result = await alertsApi.history(next, type, signal);
+      if (next === 1) range.current = timeRange(period);
+      const result = await alertsApi.history(next, type, signal, range.current);
       if (signal.aborted) return;
       setRows(previous => mergeAlerts(next === 1 ? [] : previous, result.data)); setPage(next); currentPage.current = next; setPages(result.totalPages);
     } catch (err) { if (!signal.aborted) setError(err.message); }
@@ -25,7 +30,7 @@ export default function AlertScreen({ navigation }) {
     const controller = new AbortController(); request.current = controller;
     void load(1, controller.signal, true);
     return () => controller.abort();
-  }, [type, reload, alerts.revision, connection]);
+  }, [type, period, reload, alerts.revision, connection]);
   const online = connection === 'connected';
   return <ScrollView style={styles.page} contentContainerStyle={styles.content} refreshControl={<RefreshControl refreshing={busy} onRefresh={() => { void alerts.refresh(); setReload(value => value + 1); }} />}>
     <PageHeader title="Cảnh báo SmartStore" icon="notifications-outline" subtitle="Theo dõi sự cố, xác nhận đã xem và quản lý lịch sử tại một nơi." />
@@ -42,6 +47,7 @@ export default function AlertScreen({ navigation }) {
     {alerts.active.map(alert => <AlertCard key={alert._id} alert={alert} acknowledge={alerts.acknowledge} remove={alerts.remove} online={online} />)}
     {!alerts.active.length ? <Text style={styles.body}>{alerts.loading || alerts.error ? 'Chưa xác định đầy đủ.' : 'Không có cảnh báo ACTIVE đã lưu.'}</Text> : null}
     <Text style={styles.heading}>Lịch sử cảnh báo</Text>
+    <PeriodSelector value={period} onChange={setPeriod} />
     <View style={styles.wrap}><FilterChip title="Tất cả" selected={type === ''} onPress={() => setType('')} />
       {Object.entries(alertLabels).map(([key, label]) => <FilterChip key={key} title={label} selected={type === key} onPress={() => setType(key)} />)}</View>
     <Text style={styles.body}>Dùng nút Xóa ở mỗi cảnh báo đã kết thúc để dọn lịch sử.</Text>

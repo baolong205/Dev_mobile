@@ -6,14 +6,23 @@ import { useSmartStore } from '../hooks/SmartStoreContext';
 import { alertLabels } from '../utils/alertData';
 import { colors as c } from '../constants/theme';
 export default function AlertNotice({ onOpen }) {
-  const { alerts, motionNotice, dismissMotionNotice } = useSmartStore();
-  const notice = alerts.notice || motionNotice;
+  const { alerts, motionNotice, dismissMotionNotice, deviceNotice, dismissDeviceNotice } = useSmartStore();
+  const enabled = alerts.settings?.notificationsEnabled !== false;
+  const notice = alerts.notice?.preview ? alerts.notice : enabled ? alerts.notice || deviceNotice || motionNotice : null;
   const alertDismiss = alerts.dismissNotice;
-  const dismissNotice = useCallback(id => { alertDismiss(id); dismissMotionNotice(id); }, [alertDismiss, dismissMotionNotice]);
+  const dismissNotice = useCallback(id => { alertDismiss(id); dismissMotionNotice(id); dismissDeviceNotice(id); }, [alertDismiss, dismissMotionNotice, dismissDeviceNotice]);
   useEffect(() => {
     // Do not replay a movement banner after a higher-priority environmental alert.
-    if (alerts.notice && motionNotice) dismissMotionNotice(motionNotice._id);
-  }, [alerts.notice, motionNotice, dismissMotionNotice]);
+    if ((alerts.notice || deviceNotice) && motionNotice) dismissMotionNotice(motionNotice._id);
+    if (alerts.notice && deviceNotice) dismissDeviceNotice(deviceNotice._id);
+  }, [alerts.notice, deviceNotice, motionNotice, dismissMotionNotice, dismissDeviceNotice]);
+  useEffect(() => {
+    if (!enabled) {
+      if (alerts.notice && !alerts.notice.preview) alertDismiss(alerts.notice._id);
+      if (motionNotice) dismissMotionNotice(motionNotice._id);
+      if (deviceNotice) dismissDeviceNotice(deviceNotice._id);
+    }
+  }, [enabled, alerts.notice, motionNotice, deviceNotice, alertDismiss, dismissMotionNotice, dismissDeviceNotice]);
   const insets = useSafeAreaInsets();
   const [visible, setVisible] = useState(null);
   const progress = useRef(new Animated.Value(0)).current;
@@ -52,13 +61,14 @@ export default function AlertNotice({ onOpen }) {
   }, [notice, hide, progress]);
   if (!visible) return null;
   const motion = visible.type === 'motion';
+  const offline = visible.type === 'deviceOffline';
   const critical = visible.severity === 'critical', color = motion ? c.primary : critical ? c.red : c.amber;
-  const icon = motion ? 'walk-outline' : visible.type.startsWith('temperature') ? 'thermometer-outline' : visible.type.startsWith('humidity') ? 'water-outline' : 'warning-outline';
-  const title = motion ? 'Phát hiện chuyển động' : visible.preview ? 'Xem trước thông báo' : alertLabels[visible.type] || 'Cảnh báo SmartStore';
+  const icon = offline ? 'cloud-offline-outline' : motion ? 'walk-outline' : visible.type.startsWith('temperature') ? 'thermometer-outline' : visible.type.startsWith('humidity') ? 'water-outline' : 'warning-outline';
+  const title = offline ? 'Không nhận dữ liệu ESP32' : motion ? 'Phát hiện chuyển động' : visible.preview ? 'Xem trước thông báo' : alertLabels[visible.type] || 'Cảnh báo SmartStore';
   return <View pointerEvents="box-none" style={[styles.overlay, { top: insets.top + 8 }]}>
     <Animated.View accessibilityLiveRegion="assertive" style={[styles.banner, { borderLeftColor: color,
       opacity: progress, transform: [{ translateY: progress.interpolate({ inputRange: [0, 1], outputRange: [-220, 0] }) }] }]}>
-      <Pressable accessibilityRole="button" accessibilityLabel={`${title}. Chạm để xem ${motion ? 'Trang chủ' : 'cảnh báo'}.`}
+      <Pressable accessibilityRole="button" accessibilityLabel={`${title}. Chạm để xem ${motion || offline ? 'Trang chủ' : 'cảnh báo'}.`}
         onPress={() => { if (onOpen?.(visible) !== false) hide(visible._id); }} style={styles.content}>
         <View style={[styles.icon, { backgroundColor: motion ? c.blueSoft : critical ? c.redSoft : c.amberSoft }]}><Ionicons name={icon} size={26} color={color} /></View>
         <View style={{ flex: 1, gap: 4 }}>

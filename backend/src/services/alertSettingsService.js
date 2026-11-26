@@ -1,7 +1,7 @@
 const DEVICE_ID = 'smartstore-esp32';
 const TYPES = ['temperatureHigh', 'temperatureLow', 'humidityHigh', 'humidityLow', 'sensorQuality'];
 const RULES = TYPES.slice(0, 4);
-const defaults = () => ({ deviceId: DEVICE_ID, sensorVerified: false, alertsEnabled: false,
+const defaults = () => ({ deviceId: DEVICE_ID, sensorVerified: false, alertsEnabled: false, notificationsEnabled: true,
   temperatureHigh: { enabled: true, trigger: 35, clear: 33 },
   temperatureLow: { enabled: false, trigger: 15, clear: 17 },
   humidityHigh: { enabled: true, trigger: 80, clear: 75 },
@@ -10,10 +10,10 @@ const defaults = () => ({ deviceId: DEVICE_ID, sensorVerified: false, alertsEnab
 function bad(message) { return Object.assign(new Error(message), { status: 400, code: 'INVALID_ALERT_SETTINGS' }); }
 function validateSettings(input, previous = defaults()) {
   if (!input || typeof input !== 'object' || Array.isArray(input)) throw bad('Cấu hình phải là object.');
-  const allowed = ['sensorVerified', 'alertsEnabled', ...RULES, 'consecutiveReadings', 'cooldownMinutes', 'verificationConfirmed'];
+  const allowed = ['sensorVerified', 'alertsEnabled', 'notificationsEnabled', ...RULES, 'consecutiveReadings', 'cooldownMinutes', 'verificationConfirmed'];
   if (Object.keys(input).some(key => !allowed.includes(key))) throw bad('Có trường cấu hình không được hỗ trợ.');
   const result = { ...previous, deviceId: DEVICE_ID };
-  for (const key of ['sensorVerified', 'alertsEnabled']) {
+  for (const key of ['sensorVerified', 'alertsEnabled', 'notificationsEnabled']) {
     if (key in input) {
       if (typeof input[key] !== 'boolean') throw bad(`${key} phải là Boolean.`);
       result[key] = input[key];

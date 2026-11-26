@@ -1,4 +1,5 @@
 import { API_URL, CONFIG_ERROR } from '../constants/config.js';
+import { rangeQuery } from '../utils/timeRange.js';
 async function request(path, method = 'GET', data, signal) {
   if (CONFIG_ERROR) throw new Error(CONFIG_ERROR);
   const controller = new AbortController();
@@ -20,8 +21,13 @@ export const alertsApi = {
   active: async signal => (await request('alerts/active', 'GET', undefined, signal)).data,
   settings: async signal => (await request('alert-settings', 'GET', undefined, signal)).data,
   stats: async signal => (await request('alerts/stats', 'GET', undefined, signal)).data,
-  history: (page = 1, type = '', signal) => request(`alerts?page=${page}&limit=20${type ? `&type=${encodeURIComponent(type)}` : ''}`, 'GET', undefined, signal),
+  history: (page = 1, type = '', signal, range) => request(`alerts?page=${page}&limit=20${type ? `&type=${encodeURIComponent(type)}` : ''}${rangeQuery(range)}`, 'GET', undefined, signal),
   updateSettings: async data => (await request('alert-settings', 'PUT', data)).data,
   acknowledge: async id => (await request(`alerts/${encodeURIComponent(id)}/acknowledge`, 'PATCH', {})).data,
   remove: async id => (await request(`alerts/${encodeURIComponent(id)}`, 'DELETE')).data,
+};
+export const storeApi = {
+  snapshot: async signal => (await request('store-watch', 'GET', undefined, signal)).data,
+  change: mode => request('store-watch/mode', 'PUT', { mode }),
+  review: (id, note) => request(`store-watch/incidents/${encodeURIComponent(id)}`, 'PATCH', { note }),
 };

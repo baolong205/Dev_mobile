@@ -3,7 +3,7 @@ const cors = require('cors');
 const mongoose = require('mongoose');
 const sensorRoutes = require('./routes/sensorRoutes');
 
-function createApp(mqttStatus = () => ({ connected: false, subscribed: false }), corsOptions = { origin: true }, alerts) {
+function createApp(mqttStatus = () => ({ connected: false, subscribed: false }), corsOptions = { origin: true }, alerts, watch) {
   const app = express();
   app.disable('x-powered-by');
   app.use(cors(corsOptions));
@@ -18,6 +18,13 @@ function createApp(mqttStatus = () => ({ connected: false, subscribed: false }),
     } });
   });
   app.use('/api/sensors', sensorRoutes);
+  if (watch) {
+    const handle = fn => async (req, res, next) => { try { res.json({ success: true, data: (await fn(req)) ?? null }); } catch (error) { next(error); } };
+    const lanWrite = (req, res, next) => require('./services/ledService').trustedAddress(req.socket.remoteAddress) ? next() : res.status(403).json({ success: false, error: { message: 'Chỉ thay đổi từ mạng LAN tin cậy.' } });
+    app.get('/api/store-watch', handle(() => watch.snapshot()));
+    app.put('/api/store-watch/mode', lanWrite, handle(req => watch.change(req.body?.mode)));
+    app.patch('/api/store-watch/incidents/:id', lanWrite, handle(req => watch.review(req.params.id, req.body?.note)));
+  }
   app.use('/api', require('./routes/alertRoutes').createAlertRoutes(alerts));
   app.use((_req, res) => res.status(404).json({ success: false, error: { code: 'NOT_FOUND', message: 'Route not found' } }));
   app.use((error, _req, res, _next) => {

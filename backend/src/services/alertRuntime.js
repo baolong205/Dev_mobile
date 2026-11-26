@@ -33,7 +33,7 @@ function createAlertRuntime({ emit = () => {} } = {}) {
     await Promise.all([Alert.createIndexes(), AlertSettings.createIndexes()]);
     const stored = await AlertSettings.findOne({ deviceId: DEVICE_ID }).lean();
     if (stored) {
-      const fields = Object.fromEntries(Object.keys(defaults()).filter(key => key !== 'deviceId').map(key => [key, stored[key]]));
+      const fields = Object.fromEntries(Object.keys(defaults()).filter(key => key !== 'deviceId' && stored[key] !== undefined).map(key => [key, stored[key]]));
       settings = validateSettings(fields, { ...defaults(), sensorVerified: stored.sensorVerified === true });
     } else settings = defaults(); // No seed writes to production DB merely on startup.
     const active = await Alert.find({ deviceId: DEVICE_ID, status: 'ACTIVE' }).lean();
@@ -93,8 +93,8 @@ function createAlertRuntime({ emit = () => {} } = {}) {
       return { data, total, page, limit, totalPages: Math.ceil(total / limit) };
     },
     async active() { databaseRequired(); return Alert.find({ deviceId: DEVICE_ID, status: 'ACTIVE' }).sort({ startedAt: -1 }).maxTimeMS(5000).lean(); },
-    async stats() {
-      databaseRequired(); const rows = await Alert.aggregate([{ $match: { deviceId: DEVICE_ID, deletedAt: null } }, { $group: { _id: { type: '$type', status: '$status' }, count: { $sum: 1 } } }]).option({ maxTimeMS: 5000 });
+    async stats(query = {}) {
+      databaseRequired(); const rows = await Alert.aggregate([{ $match: filters(query) }, { $group: { _id: { type: '$type', status: '$status' }, count: { $sum: 1 } } }]).option({ maxTimeMS: 5000 });
       const result = { total: 0, active: 0, resolved: 0, temperature: 0, humidity: 0, sensorQuality: 0 };
       for (const row of rows) { result.total += row.count; result[row._id.status === 'ACTIVE' ? 'active' : 'resolved'] += row.count;
         result[row._id.type.startsWith('temperature') ? 'temperature' : row._id.type.startsWith('humidity') ? 'humidity' : 'sensorQuality'] += row.count; }

@@ -8,7 +8,7 @@ export function fieldSummary(rows, field) {
   return { count: values.length, average: values.length ? values.reduce((a, b) => a + b, 0) / values.length : null,
     min: values.length ? Math.min(...values) : null, max: values.length ? Math.max(...values) : null };
 }
-export function chartGeometry(rows, field, width, height = 160) {
+export function chartGeometry(rows, field, width, height = 160, maxGapMs = 10000) {
   const summary = fieldSummary(rows, field);
   if (!summary.count || width <= 0) return { points: [], segments: [], min: null, max: null };
   const margin = Math.max((summary.max - summary.min) * 0.12, field === 'humidity' ? 1 : 0.5);
@@ -21,7 +21,7 @@ export function chartGeometry(rows, field, width, height = 160) {
     if (typeof value !== 'number' || !Number.isFinite(value)) { previous = null; continue; }
     const point = { x: span ? (Date.parse(row.receivedAt) - start) / span * width : width / 2, y: (max - value) / (max - min) * height, time: Date.parse(row.receivedAt), value };
     points.push(point);
-    if (previous && point.time - previous.time <= 10000) {
+    if (previous && point.time - previous.time <= maxGapMs) {
       const dx = point.x - previous.x, dy = point.y - previous.y;
       segments.push({ x: (point.x + previous.x) / 2, y: (point.y + previous.y) / 2, length: Math.hypot(dx, dy), angle: `${Math.atan2(dy, dx)}rad` });
     }

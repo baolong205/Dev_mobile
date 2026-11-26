@@ -64,6 +64,7 @@ function createSocketServer(httpServer, { cors, getStatus, getLatest, database, 
       io.emit('sensor:update', latest);
     },
     publishStatus,
+    publishStoreChange() { if (!closed) io.emit('store:changed'); },
     publishAlert(event, data) {
       if (!closed && ['alert:created', 'alert:updated', 'alert:resolved', 'alert:deleted', 'alert:settings:updated', 'sensor:quality'].includes(event)) io.emit(event, data);
     },

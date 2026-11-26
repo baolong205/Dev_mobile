@@ -7,7 +7,7 @@ export default function LedControls({ state }) {
   const { ledState, controlReady, commandPending, commandMessage, sendLedCommand } = state;
   const disabled = !controlReady || commandPending;
   return <Card><Text style={styles.heading}>Điều khiển thiết bị</Text>
-    <Badge label={!ledState ? 'Chưa có xác nhận MODULE 08' : `Chế độ xác nhận: ${ledState.mode === 'auto' ? 'Tự động (AUTO)' : 'Thủ công (MANUAL)'}`} tone={controlReady ? 'green' : 'amber'} />
+    <Badge label={!ledState ? 'Đang chờ trạng thái từ ESP32' : `Chế độ gần nhất: ${ledState.mode === 'auto' ? 'Tự động (AUTO)' : 'Thủ công (MANUAL)'}`} tone={controlReady ? 'green' : 'amber'} />
     <Text style={styles.body}>{controlReady ? 'ESP32 vừa gửi trạng thái — có thể điều khiển' : 'Chưa xác nhận ESP32 đang sẵn sàng. Điều khiển đã khóa.'}</Text>
     <View style={{ gap: 10 }}>
       <Button title="Tự động (AUTO)" icon="flash-outline" variant={ledState?.mode === 'auto' ? 'primary' : 'secondary'} disabled={disabled || ledState?.mode === 'auto'} onPress={() => sendLedCommand({ mode: 'auto' })} />

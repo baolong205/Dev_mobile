@@ -15,7 +15,7 @@ function createAlertRoutes(alerts) {
   };
   router.get('/alerts', wrap(async (req, res) => res.json({ success: true, ...await alerts.list(req.query) })));
   router.get('/alerts/active', wrap(async (_req, res) => res.json({ success: true, data: await alerts.active() })));
-  router.get('/alerts/stats', wrap(async (_req, res) => res.json({ success: true, data: await alerts.stats() })));
+  router.get('/alerts/stats', wrap(async (req, res) => res.json({ success: true, data: await alerts.stats(req.query) })));
   router.patch('/alerts/:id/acknowledge', lanWrite, wrap(async (req, res) => {
     if (req.body && Object.keys(req.body).length) throw httpError(400, 'INVALID_BODY', 'Không nhận dữ liệu định danh giả lập.');
     res.json({ success: true, data: await alerts.acknowledge(req.params.id) });

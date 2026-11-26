@@ -12,7 +12,8 @@
       "package": "com.smartstore.mobile"
     },
     "plugins": [
-      "expo-font"
+      "expo-font",
+      "expo-sharing"
     ]
   }
 }

@@ -34,6 +34,7 @@ export function mergeAlerts(current, incoming) {
 }
 export function settingsPayload(form, confirmed = false) {
   const result = { sensorVerified: form.sensorVerified, alertsEnabled: form.alertsEnabled,
+    notificationsEnabled: form.notificationsEnabled !== false,
     consecutiveReadings: Number(form.consecutiveReadings), cooldownMinutes: Number(form.cooldownMinutes), verificationConfirmed: confirmed };
   if (String(form.consecutiveReadings).trim() === '' || String(form.cooldownMinutes).trim() === '') throw new Error('Không để trống số mẫu hoặc cooldown.');
   for (const key of Object.keys(alertLabels).filter(key => key !== 'sensorQuality')) {

@@ -4,7 +4,7 @@ const service = require('../services/sensorService');
 const { createLedService, ACK_TOPIC } = require('../services/ledService');
 
 // Factory is called once by server.js, never per HTTP request/reconnect.
-function startMqtt(config, { onReading = () => {}, onStatusChange = () => {}, onLedState = () => {}, onAlertReading = () => {}, connect = mqtt.connect } = {}) {
+function startMqtt(config, { onReading = () => {}, onStatusChange = () => {}, onLedState = () => {}, onAlertReading = () => {}, onStreamBreak = () => {}, connect = mqtt.connect } = {}) {
   let subscribed = false;
   let ackSubscribed = false;
   let lastWarningAt = 0;
@@ -39,6 +39,7 @@ function startMqtt(config, { onReading = () => {}, onStatusChange = () => {}, on
   client.on('close', () => { subscribed = false; ackSubscribed = false; leds.disconnected(); notifyStatus(); });
   client.on('offline', () => { subscribed = false; ackSubscribed = false; leds.disconnected(); notifyStatus(); });
   client.on('reconnect', notifyStatus);
+  client.on('offline', onStreamBreak); client.on('close', onStreamBreak);
   client.on('error', () => console.error('[MQTT] connection error (URL/credentials hidden)'));
   client.on('message', async (topic, message, packet) => {
     if (topic === ACK_TOPIC) {

@@ -31,6 +31,8 @@ export default function AlertSettingsScreen() {
         setForm(previous => ({ ...previous, alertsEnabled: value }));
       })}
       <Text style={styles.body}>Tắt giám sát không tự kết thúc incident ACTIVE. Thiếu số đo hợp lệ thì không thể xác nhận điều kiện đã bình thường.</Text>
+      {toggle('Bật thông báo thả xuống', form.notificationsEnabled !== false, value => setForm(previous => ({ ...previous, notificationsEnabled: value })))}
+      <Text style={styles.body}>Tắt banner không tắt giám sát: cảnh báo vẫn được lưu, hiển thị và xét kết thúc. Áp dụng cho cảnh báo môi trường, PIR và mất telemetry khi ứng dụng đang mở; chưa có push khi app đóng.</Text>
     </Card>
     {Object.entries(alertLabels).filter(([key]) => key !== 'sensorQuality').map(([key, label]) => <Card key={key}>
       <Text style={styles.heading}>{label}</Text>

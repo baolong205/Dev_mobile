@@ -2,9 +2,13 @@ import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { FlatList, RefreshControl, Text, View } from 'react-native';
 import { api } from '../services/apiService';
 import { mergeHistory, formatNumber, formatTime } from '../utils/formatSensor';
-import { Badge, Button, Card, Message, PageHeader, styles } from '../components/Common';
+import { Badge, Button, Card, FilterChip, Message, PageHeader, styles } from '../components/Common';
+import PeriodSelector from '../components/PeriodSelector';
+import { timeRange } from '../utils/timeRange';
 import { colors as c } from '../constants/theme';
 export default function HistoryScreen() {
+  const [period, setPeriod] = useState('day'), [kind, setKind] = useState('sensors');
+  const range = useRef(timeRange());
   const [rows, setRows] = useState([]); const [page, setPage] = useState(0);
   const [pages, setPages] = useState(0); const [total, setTotal] = useState(0);
   const [busy, setBusy] = useState(false); const [error, setError] = useState(null);
@@ -16,17 +20,21 @@ export default function HistoryScreen() {
     active.current?.abort(); const controller = new AbortController(); active.current = controller;
     const id = ++requestId.current; setBusy(true); setRefreshing(target === 1); setError(null);
     try {
-      const result = await api.history(target, controller.signal);
+      if (target === 1) range.current = timeRange(period);
+      const result = await (kind === 'motion' ? api.motion : api.history)(target, controller.signal, range.current);
       if (!mounted.current || id !== requestId.current) return;
       setRows(current => mergeHistory(target === 1 ? [] : current, result.data));
       setPage(result.page); setPages(result.totalPages); setTotal(result.total);
     } catch (err) { if (mounted.current && id === requestId.current) { setError(err.message); setFailedPage(target); } }
     finally { if (mounted.current && id === requestId.current) { active.current = null; setBusy(false); setRefreshing(false); } }
-  }, []);
+  }, [period, kind]);
   useEffect(() => { mounted.current = true; void load(1); return () => { mounted.current = false; active.current?.abort(); }; }, [load]);
   return <FlatList style={styles.page} contentContainerStyle={styles.content} data={rows} keyExtractor={item => item._id}
     refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => load(1)} tintColor={c.primary} />}
-    ListHeaderComponent={<View style={{ gap: 16 }}><PageHeader title="Lịch sử cảm biến" icon="time-outline" subtitle={`${total} bản ghi cảm biến · Theo dõi những thay đổi tại cửa hàng.`} /><Text style={styles.body}>20 bản ghi mỗi trang · Kéo xuống để làm mới. Backend chưa hỗ trợ lọc ngày.</Text>
+    ListHeaderComponent={<View style={{ gap: 16 }}><PageHeader title="Lịch sử cảm biến" icon="time-outline" subtitle={`${total} ${kind === 'motion' ? 'lượt chuyển động' : 'bản ghi'} trong khoảng đã chọn`} />
+      <PeriodSelector value={period} onChange={setPeriod} />
+      <View style={styles.wrap}><FilterChip title="Tất cả số đo" selected={kind === 'sensors'} onPress={() => setKind('sensors')} /><FilterChip title="Lượt chuyển động PIR" selected={kind === 'motion'} onPress={() => setKind('motion')} /></View>
+      <Text style={styles.body}>20 bản ghi mỗi trang · Kéo xuống để làm mới. Lượt PIR chỉ tính false → true cùng phiên, không tính trạng thái true ban đầu hoặc sau gián đoạn.</Text>
       {error ? <Message title="Không tải được lịch sử" detail={error} error onRetry={() => load(failedPage)} /> : null}</View>}
     ListEmptyComponent={busy ? <Message title="Đang tải lịch sử" loading /> : !error ? <Message title="Chưa có lịch sử" detail="Không có bản ghi nào trong cơ sở dữ liệu." /> : null}
     renderItem={({ item }) => <Card><Text style={styles.heading}>{formatTime(item.receivedAt)}</Text>

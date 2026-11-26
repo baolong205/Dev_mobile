@@ -26,7 +26,7 @@ export default function App() {
       </Tabs.Navigator></NavigationContainer>
       <AlertNotice onOpen={notice => {
         if (!navigationRef.isReady()) return false;
-        navigationRef.navigate(notice?.type === 'motion' ? 'Dashboard' : 'Alerts'); return true;
+        navigationRef.navigate(['motion', 'deviceOffline'].includes(notice?.type) ? 'Dashboard' : 'Alerts'); return true;
       }} />
     </SafeAreaView>
   </SmartStoreProvider></SafeAreaProvider>;

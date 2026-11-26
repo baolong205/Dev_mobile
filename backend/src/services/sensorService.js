@@ -57,11 +57,11 @@ async function getLatest() {
   requireDatabase();
   return SensorReading.findOne().sort({ receivedAt: -1, _id: -1 }).maxTimeMS(5000).lean();
 }
-async function getHistory({ page, limit }) {
+async function getHistory({ page, limit, filter = {} }) {
   requireDatabase();
   const [total, data] = await Promise.all([
-    SensorReading.countDocuments().maxTimeMS(5000),
-    SensorReading.find().sort({ receivedAt: -1, _id: -1 }).skip((page - 1) * limit).limit(limit).maxTimeMS(5000).lean()
+    SensorReading.countDocuments(filter).maxTimeMS(5000),
+    SensorReading.find(filter).sort({ receivedAt: -1, _id: -1 }).skip((page - 1) * limit).limit(limit).maxTimeMS(5000).lean()
   ]);
   return { total, page, limit, totalPages: Math.ceil(total / limit), data };
 }
@@ -84,4 +84,4 @@ async function getStats() {
     note: 'Raw received readings; null excluded. Sensor accuracy/calibration is not verified.'
   };
 }
-module.exports = { httpError, validatePayload, parsePagination, saveReading, getLatest, getHistory, getStats };
+module.exports = { httpError, requireDatabase, validatePayload, parsePagination, saveReading, getLatest, getHistory, getStats };

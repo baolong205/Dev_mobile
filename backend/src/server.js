@@ -10,14 +10,19 @@ const { getLatest } = require('./services/sensorService');
 async function main() {
   const config = loadConfig();
   let sockets;
+  const watch = require('./services/storeWatch').createStoreWatch(undefined, () => sockets?.publishStoreChange());
   const alerts = require('./services/alertRuntime').createAlertRuntime({ emit: (event, data) => sockets?.publishAlert(event, data) });
   const mqtt = startMqtt(config, {
-    onAlertReading: (reading, metadata) => alerts.ingest(reading, metadata),
+    onAlertReading: (reading, metadata) => {
+      watch.ingest(reading, metadata)?.catch(() => console.warn('[Store] motion event not saved; check MongoDB'));
+      alerts.ingest(reading, metadata);
+    },
+    onStreamBreak: () => watch.reset(),
     onReading: reading => sockets?.publishReading(reading),
     onLedState: state => sockets?.publishLedState(state),
     onStatusChange: () => sockets?.publishStatus()
   });
-  const server = http.createServer(createApp(mqtt.status, config.cors, alerts));
+  const server = http.createServer(createApp(mqtt.status, config.cors, alerts, watch));
   sockets = createSocketServer(server, {
     cors: config.cors, database: mongoose.connection, getLatest, leds: mqtt.leds, getQuality: alerts.quality,
     getStatus: () => {

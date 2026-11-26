@@ -4,9 +4,9 @@ import { Card, styles } from './Common';
 import { chartGeometry } from '../utils/chartData';
 import { formatNumber, formatTime } from '../utils/formatSensor';
 import { colors as c } from '../constants/theme';
-export default function SensorLineChart({ rows, field, title, unit, color = c.primary }) {
+export default function SensorLineChart({ rows, field, title, unit, color = c.primary, maxGapMs = 10000, aggregated = false }) {
   const [width, setWidth] = useState(0);
-  const graph = useMemo(() => chartGeometry(rows, field, width), [rows, field, width]);
+  const graph = useMemo(() => chartGeometry(rows, field, width, 160, maxGapMs), [rows, field, width, maxGapMs]);
   return <Card><Text style={styles.heading}>{title}</Text>
     {!graph.points.length ? <Text style={styles.body}>Chưa có số đo hợp lệ trong các bản ghi đã tải.</Text> : null}
     <View style={{ flexDirection: 'row', gap: 8 }}>
@@ -18,6 +18,6 @@ export default function SensorLineChart({ rows, field, title, unit, color = c.pr
       </View>
     </View>
     {rows.length ? <View style={{ flexDirection: 'row', gap: 12, justifyContent: 'space-between' }}><Text style={[styles.body, { flex: 1, fontSize: 10 }]}>{formatTime(rows[0].receivedAt)}</Text><Text style={[styles.body, { flex: 1, fontSize: 10, textAlign: 'right' }]}>{formatTime(rows.at(-1).receivedAt)}</Text></View> : null}
-    <Text style={[styles.body, { fontSize: 12 }]}>{unit} · {graph.points.length} điểm hợp lệ. Ngắt đường khi mẫu null hoặc khoảng nhận dữ liệu trên 10 giây.</Text>
+    <Text style={[styles.body, { fontSize: 12 }]}>{unit} · {graph.points.length} điểm {aggregated ? 'trung bình theo bucket thời gian' : 'hợp lệ'}. Ngắt đường khi không có dữ liệu hoặc khoảng cách trên {Math.round(maxGapMs / 1000)} giây.</Text>
   </Card>;
 }

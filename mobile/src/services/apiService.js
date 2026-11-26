@@ -1,5 +1,6 @@
 import { API_URL, CONFIG_ERROR } from '../constants/config.js';
 import { normalizeReading, normalizeStatus } from '../utils/formatSensor.js';
+import { rangeQuery } from '../utils/timeRange.js';
 
 async function request(route, options = {}) {
   if (CONFIG_ERROR) throw new Error(CONFIG_ERROR);
@@ -37,13 +38,24 @@ export const api = {
     return reading;
   },
   health: signal => request('health', { health: true, signal }),
-  async history(page = 1, signal) {
-    const body = await request(`sensors/history?page=${page}&limit=20`, { signal });
+  async history(page = 1, signal, range) {
+    const body = await request(`sensors/history?page=${page}&limit=20${rangeQuery(range)}`, { signal });
     if (!Array.isArray(body.data) || !Number.isInteger(body.page) || !Number.isInteger(body.totalPages) ||
       !Number.isInteger(body.total) || body.data.some(row => !normalizeReading(row) || typeof row._id !== 'string')) {
       throw new Error('Phản hồi lịch sử không đúng cấu trúc.');
     }
     return body;
+  },
+  async motion(page = 1, signal, range) {
+    const body = await request(`sensors/motion?page=${page}&limit=20${rangeQuery(range)}`, { signal });
+    if (!Array.isArray(body.data) || !Number.isInteger(body.page) || !Number.isInteger(body.totalPages) || !Number.isInteger(body.total) || body.data.some(row => !normalizeReading(row) || typeof row._id !== 'string')) throw new Error('Lịch sử chuyển động không đúng cấu trúc.');
+    return body;
+  },
+  async report(range, signal) {
+    const body = await request(`sensors/report?${rangeQuery(range).slice(1)}`, { signal });
+    const value = body.data;
+    if (!value || !Array.isArray(value.series) || !Number.isInteger(value.total) || !value.temperature || !value.humidity || !value.alerts || !Number.isFinite(Date.parse(value.from)) || !Number.isFinite(Date.parse(value.to))) throw new Error('Báo cáo không đúng cấu trúc.');
+    return value;
   },
   async stats(signal) {
     const value = (await request('sensors/stats', { signal })).data;
