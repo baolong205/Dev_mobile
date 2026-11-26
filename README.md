@@ -52,7 +52,20 @@ Broker bắt buộc đăng nhập, mỗi tài khoản bị giới hạn topic b�
 [`mosquitto/config/acl`](mosquitto/config/acl): `backend`, `esp32`, `healthcheck`.
 Vẫn chỉ dùng trong LAN — chưa bật TLS, không mở cổng 1883 ra Internet.
 
-### 2. Chạy bằng Docker (khuyến nghị)
+### 2a. Chạy không cần Docker (dev)
+
+```powershell
+cd backend; npm install
+npm run dev:stack     # terminal 1: MQTT broker (aedes, có đăng nhập + ACL) + MongoDB, dữ liệu ở .dev-data/
+npm start             # terminal 2: backend (backend/.env: MQTT_URL=mqtt://127.0.0.1:1883)
+npm run dev:esp32     # terminal 3 (tùy chọn): giả lập ESP32 khi không có mạch thật
+```
+
+`dev:stack` đọc mật khẩu `MQTT_<USER>_PASSWORD` trong `.env` gốc và quyền topic trong
+`mosquitto/config/acl`, nên hành vi giống Mosquitto thật. Lần đầu sẽ tải MongoDB (~600MB).
+`SIM_HOT=1 npm run dev:esp32` gửi nhiệt độ cao để thử cảnh báo.
+
+### 2. Chạy bằng Docker
 
 ```powershell
 docker compose up -d --build    # mqtt + mongo + backend
