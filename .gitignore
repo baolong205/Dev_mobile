@@ -3,7 +3,13 @@ node_modules/
 .expo/
 .expo-shared/
 dist/
+dist-*/
 build/
+backups/
+logs/
+mobile-backups/
+*-audit*.json
+audit-*.json
 coverage/
 *.tsbuildinfo
 
