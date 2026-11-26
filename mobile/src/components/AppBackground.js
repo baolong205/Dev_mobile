@@ -3,19 +3,20 @@ import { Image, StyleSheet, View } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { colors as c } from '../constants/theme';
 
-// Ảnh: "Turquoise and pink soft gradient" trên Unsplash (Unsplash License, dùng miễn phí):
-// https://unsplash.com/photos/turquoise-and-pink-soft-gradient-znivrLI5ZI4
+// Ảnh: "Fleurs de dahlia orange avec des gouttelettes d'eau" của Liana S trên Unsplash
+// (Unsplash License, dùng miễn phí), cắt dọc 1080x1920 giữ bông hoa bên trái:
+// https://unsplash.com/photos/plb6WRPuxO0
 const IMAGE = require('../../assets/background.jpg');
 
 /**
- * Nền chung: ảnh gradient xanh ngọc–hồng, phủ một lớp trắng mờ (đậm dần xuống dưới)
- * để màu bớt gắt và chữ đen, thẻ trắng luôn dễ đọc.
+ * Nền chung: ảnh hoa dahlia làm mờ nhẹ, phủ lớp trắng ngà (đậm dần xuống dưới)
+ * vì ảnh gốc tối — giữ được sắc cam/xanh lá mà chữ đen và thẻ trắng vẫn dễ đọc.
  * Ảnh đặt tuyệt đối trong khung để không bao giờ làm khung giãn theo kích thước ảnh gốc.
  */
 export default memo(function AppBackground({ children }) {
   return <View style={s.root}>
-    <Image source={IMAGE} resizeMode="cover" style={s.image} accessibilityIgnoresInvertColors />
-    <LinearGradient pointerEvents="none" colors={['#FFFFFF59', '#FFFFFF8C', '#F5F6F9D9']} locations={[0, 0.45, 1]} style={StyleSheet.absoluteFill} />
+    <Image source={IMAGE} resizeMode="cover" blurRadius={3} style={s.image} accessibilityIgnoresInvertColors />
+    <LinearGradient pointerEvents="none" colors={['#FFFBF866', '#FFFBF894', '#F7F5F3D9']} locations={[0, 0.45, 1]} style={StyleSheet.absoluteFill} />
     {children}
   </View>;
 });

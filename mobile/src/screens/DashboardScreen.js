@@ -28,7 +28,10 @@ export default function DashboardScreen({ navigation }) {
       <RoundAction icon="time-outline" label="Lịch sử" onPress={() => navigation.navigate('History')} />
       <RoundAction icon="notifications-outline" label="Cảnh báo" active={alerts.active.length > 0} onPress={() => navigation.navigate('Alerts')} />
     </View>
-    <View style={{ gap: 6, paddingHorizontal: 2 }}><SensorQualityBadge quality={alerts.quality} settings={alerts.settings} stale={state.stale} /></View>
+    {/* Tấm kính trắng mờ: chữ ghi chú không đặt thẳng lên ảnh nền. */}
+    <View style={{ gap: 6, padding: 14, borderRadius: 20, backgroundColor: '#FFFFFFC7', borderWidth: 1, borderColor: '#FFFFFF' }}>
+      <SensorQualityBadge quality={alerts.quality} settings={alerts.settings} stale={state.stale} />
+    </View>
     {alerts.active.length ? <EnvironmentAlerts state={state} navigation={navigation} /> : null}
     <LiveStore state={state} />
     <LedControls state={state} />

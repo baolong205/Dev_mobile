@@ -166,7 +166,7 @@ Token gửi khi kết nối: `io(url, { auth: { token } })`; token sai → `conn
 
 ## Nguồn tài nguyên
 
-- Ảnh nền ứng dụng (`mobile/assets/background.jpg`): ["Turquoise and pink soft gradient"](https://unsplash.com/photos/turquoise-and-pink-soft-gradient-znivrLI5ZI4) trên Unsplash, dùng theo [Unsplash License](https://unsplash.com/license).
+- Ảnh nền ứng dụng (`mobile/assets/background.jpg`): ["Fleurs de dahlia orange avec des gouttelettes d'eau"](https://unsplash.com/photos/plb6WRPuxO0) của Liana S trên Unsplash, dùng theo [Unsplash License](https://unsplash.com/license).
 - Phong cách giao diện tham khảo thiết kế Zenvest của Orbix Studio.
 - Font [Be Vietnam Pro](https://fonts.google.com/specimen/Be+Vietnam+Pro) (SIL Open Font License).
 

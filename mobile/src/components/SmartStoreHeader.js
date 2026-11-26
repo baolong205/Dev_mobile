@@ -34,6 +34,7 @@ const s = StyleSheet.create({
   dot: { position: 'absolute', top: 9, right: 10, width: 7, height: 7, borderRadius: 4, backgroundColor: c.red, borderWidth: 1.5, borderColor: c.card },
   avatar: { backgroundColor: '#E4E9F6' },
   avatarText: { fontSize: 14, fontFamily: f.semibold, color: c.text },
-  subtitle: { color: c.muted, fontSize: 13, fontFamily: f.regular },
+  // Nằm trực tiếp trên ảnh nền: dùng màu đậm hơn chữ phụ thông thường cho đủ tương phản.
+  subtitle: { color: '#3B4049', fontSize: 13, fontFamily: f.medium },
   title: { color: c.text, fontSize: 26, lineHeight: 32, fontFamily: f.regular, letterSpacing: -0.7 },
 });
