@@ -1,7 +1,7 @@
 import React from 'react';
-import { Switch, Text, View } from 'react-native';
+import { Text, View } from 'react-native';
 import { useSmartStore } from '../hooks/SmartStoreContext';
-import { Badge, Button, Card, styles } from './Common';
+import { Badge, Button, Card, Toggle, styles } from './Common';
 import { colors as c } from '../constants/theme';
 
 const STATUS = {
@@ -27,8 +27,8 @@ export default function NotificationSettings() {
     {n.status === 'denied' ? <Text style={styles.body}>Hãy bật quyền thông báo cho ứng dụng trong Cài đặt của điện thoại rồi thử lại.</Text> : null}
     {KINDS.map(([key, title, detail]) => <View key={key} style={{ flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 4 }}>
       <View style={{ flex: 1 }}><Text style={styles.value}>{title}</Text><Text style={[styles.body, { fontSize: 13 }]}>{detail}</Text></View>
-      <Switch accessibilityLabel={title} value={n.categories[key] !== false} disabled={n.status === 'denied' || n.busy}
-        onValueChange={value => n.setCategory(key, value)} trackColor={{ true: c.primary, false: '#CBD5E1' }} />
+      <Toggle accessibilityLabel={title} value={n.categories[key] !== false} disabled={n.status === 'denied' || n.busy}
+        onValueChange={value => n.setCategory(key, value)} />
     </View>)}
     <View style={{ gap: 10 }}>
       {n.status === 'denied' || n.status === 'error'

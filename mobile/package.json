@@ -13,6 +13,7 @@
     "test:backend": "node --env-file=.env scripts/verifyBackend.mjs"
   },
   "dependencies": {
+    "@expo-google-fonts/be-vietnam-pro": "^0.4.1",
     "@expo/vector-icons": "^15.0.2",
     "@react-navigation/bottom-tabs": "^7.21.0",
     "@react-navigation/native": "^7.5.1",

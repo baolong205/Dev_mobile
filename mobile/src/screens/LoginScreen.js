@@ -1,12 +1,11 @@
 import React, { useState } from 'react';
 import { KeyboardAvoidingView, Platform, ScrollView, Text, TextInput, View } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../hooks/AuthContext';
 import { API_URL, CONFIG_ERROR } from '../constants/config';
-import { Button, Card, styles } from '../components/Common';
-import { colors as c, radius } from '../constants/theme';
+import { Button, Card, Lamp, styles } from '../components/Common';
+import { colors as c, fonts as f, radius } from '../constants/theme';
 
-const input = { borderWidth: 1, borderColor: c.border, borderRadius: radius.sm, paddingHorizontal: 14, minHeight: 48, fontSize: 16, color: c.text, backgroundColor: c.background };
+const input = { borderWidth: 1, borderColor: c.border, borderRadius: radius.sm, paddingHorizontal: 14, minHeight: 48, fontSize: 16, color: c.text, backgroundColor: c.background, fontFamily: f.regular };
 
 export default function LoginScreen() {
   const { login, notice } = useAuth();
@@ -24,10 +23,12 @@ export default function LoginScreen() {
   const message = CONFIG_ERROR || error || notice;
   return <KeyboardAvoidingView style={styles.page} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
     <ScrollView contentContainerStyle={[styles.content, { flexGrow: 1, justifyContent: 'center' }]} keyboardShouldPersistTaps="handled">
-      <View style={{ alignItems: 'center', gap: 8, marginBottom: 8 }}>
-        <Ionicons name="storefront-outline" size={44} color={c.primary} />
-        <Text style={styles.title}>SmartStore</Text>
-        <Text style={styles.body}>Đăng nhập để theo dõi cửa hàng</Text>
+      <View style={{ gap: 6, marginBottom: 8, paddingHorizontal: 4 }}>
+        <View style={{ flexDirection: 'row', gap: 2, marginBottom: 6 }}>
+          <Lamp tone="green" size={12} /><Lamp tone="amber" on={false} size={12} /><Lamp tone="red" on={false} size={12} />
+        </View>
+        <Text style={[styles.title, { fontSize: 32 }]}>SmartStore</Text>
+        <Text style={[styles.body, { fontSize: 16 }]}>Đăng nhập để xem tình trạng cửa hàng của bạn.</Text>
       </View>
       <Card>
         <Text style={styles.value}>Tên đăng nhập</Text>

@@ -16,10 +16,19 @@ import { AuthProvider, useAuth } from './src/hooks/AuthContext';
 import LoginScreen from './src/screens/LoginScreen';
 import { ActivityIndicator, View } from 'react-native';
 import { onNotificationOpened } from './src/services/notifications';
+import { useFonts } from 'expo-font';
+import { BeVietnamPro_300Light } from '@expo-google-fonts/be-vietnam-pro/300Light';
+import { BeVietnamPro_400Regular } from '@expo-google-fonts/be-vietnam-pro/400Regular';
+import { BeVietnamPro_500Medium } from '@expo-google-fonts/be-vietnam-pro/500Medium';
+import { BeVietnamPro_600SemiBold } from '@expo-google-fonts/be-vietnam-pro/600SemiBold';
+import { BeVietnamPro_700Bold } from '@expo-google-fonts/be-vietnam-pro/700Bold';
 const SCREENS = ['Dashboard', 'History', 'Charts', 'Alerts', 'Settings'];
 const Tabs = createBottomTabNavigator();
 const navigationRef = createNavigationContainerRef();
 export default function App() {
+  const [fontsLoaded, fontError] = useFonts({ BeVietnamPro_300Light, BeVietnamPro_400Regular, BeVietnamPro_500Medium, BeVietnamPro_600SemiBold, BeVietnamPro_700Bold });
+  // Lỗi tải font: vẫn chạy với font hệ thống thay vì kẹt ở màn hình chờ.
+  if (!fontsLoaded && !fontError) return <View style={{ flex: 1, backgroundColor: c.background }} />;
   return <SafeAreaProvider><StatusBar style="dark" /><AuthProvider><AuthGate /></AuthProvider></SafeAreaProvider>;
 }
 function AuthGate() {

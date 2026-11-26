@@ -5,9 +5,11 @@ import Constants from 'expo-constants';
 import { notificationsApi } from './notificationApi';
 
 // Trong app đã có banner riêng (AlertNotice): khi app đang mở, không hiện thêm banner hệ thống.
-Notifications.setNotificationHandler({
-  handleNotification: async () => ({ shouldShowBanner: false, shouldShowList: true, shouldPlaySound: false, shouldSetBadge: false }),
-});
+if (Platform.OS !== 'web') {
+  Notifications.setNotificationHandler({
+    handleNotification: async () => ({ shouldShowBanner: false, shouldShowList: true, shouldPlaySound: false, shouldSetBadge: false }),
+  });
+}
 
 const CHANNELS = [
   { id: 'alerts', name: 'Cảnh báo nhiệt độ/độ ẩm', importance: Notifications.AndroidImportance.MAX },
@@ -32,6 +34,7 @@ const projectId = Constants.expoConfig?.extra?.eas?.projectId ?? Constants.easCo
  * 'local-only': vẫn hiện thông báo cục bộ khi app chạy nền, nhưng không nhận được khi app đã tắt.
  */
 export async function registerForNotifications({ askPermission = true, categories } = {}) {
+  if (Platform.OS === 'web') return { status: 'local-only', reason: 'Bản web không hỗ trợ thông báo đẩy.' };
   await ensureChannels();
   let { status } = await Notifications.getPermissionsAsync();
   if (status !== 'granted' && askPermission) status = (await Notifications.requestPermissionsAsync()).status;
@@ -68,16 +71,20 @@ export const hasRemotePush = () => Boolean(registeredToken);
  * Khi đã có push từ server, server gửi rồi nên bỏ qua để không bị trùng.
  */
 export async function presentLocal({ title, body, data = {}, channelId = 'alerts' }) {
-  if (hasRemotePush()) return;
+  if (hasRemotePush() || Platform.OS === 'web') return;
   await ensureChannels();
   await Notifications.scheduleNotificationAsync({ content: { title, body, data, sound: 'default' }, trigger: Platform.OS === 'android' ? { channelId } : null });
 }
 
 /** Lắng nghe người dùng chạm thông báo; trả về hàm hủy. onOpen(data) với data.screen. */
 export function onNotificationOpened(onOpen) {
-  const subscription = Notifications.addNotificationResponseReceivedListener(response => onOpen(response.notification.request.content.data || {}));
-  // Trường hợp app được mở từ trạng thái tắt bằng cách chạm thông báo.
-  const last = Notifications.getLastNotificationResponse?.();
-  if (last) onOpen(last.notification.request.content.data || {});
-  return () => subscription.remove();
+  if (Platform.OS === 'web') return () => {};
+  let subscription = null;
+  try {
+    subscription = Notifications.addNotificationResponseReceivedListener(response => onOpen(response.notification.request.content.data || {}));
+    // Trường hợp app được mở từ trạng thái tắt bằng cách chạm thông báo.
+    const last = Notifications.getLastNotificationResponse?.();
+    if (last) onOpen(last.notification.request.content.data || {});
+  } catch { /* thiết bị không hỗ trợ: bỏ qua, không làm sập app */ }
+  return () => subscription?.remove();
 }

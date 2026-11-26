@@ -72,10 +72,10 @@ export default function AlertNotice({ onOpen }) {
         onPress={() => { if (onOpen?.(visible) !== false) hide(visible._id); }} style={styles.content}>
         <View style={[styles.icon, { backgroundColor: motion ? c.blueSoft : critical ? c.redSoft : c.amberSoft }]}><Ionicons name={icon} size={26} color={color} /></View>
         <View style={{ flex: 1, gap: 4 }}>
-          <Text style={styles.brand}>SMARTSTORE · {motion ? 'CHUYỂN ĐỘNG PIR' : visible.preview ? 'XEM TRƯỚC · KHÔNG PHẢI CẢNH BÁO THẬT' : critical ? 'CẢNH BÁO NGHIÊM TRỌNG' : 'CẦN CHÚ Ý'}</Text>
+          <Text style={styles.brand}>{motion ? 'Cảm biến chuyển động' : visible.preview ? 'Xem trước, không phải cảnh báo thật' : critical ? 'Cảnh báo nghiêm trọng' : 'Cần chú ý'}</Text>
           <Text style={[styles.title, { color }]}>{title}</Text>
           <Text style={styles.message} numberOfLines={3}>{visible.message || 'Có cảnh báo mới cần kiểm tra.'}</Text>
-          <Text style={styles.hint}>Chạm để xem · Tự ẩn sau vài giây</Text>
+          <Text style={styles.hint}>Chạm để xem. Tự ẩn sau vài giây.</Text>
         </View>
       </Pressable>
       <Pressable accessibilityRole="button" accessibilityLabel="Đóng thông báo cảnh báo" hitSlop={6}

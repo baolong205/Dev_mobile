@@ -1,21 +1,26 @@
 import React from 'react';
 import { Text, View } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
-import { Button, Card, styles } from './Common';
+import { Button, Card, Lamp, styles } from './Common';
 import { alertLabels } from '../utils/alertData';
-import { environmentSummary } from '../utils/dashboardState';
-import { colors as c } from '../constants/theme';
+import { formatNumber } from '../utils/formatSensor';
+
+/** Danh sách ngắn các cảnh báo đang hoạt động (bảng trạng thái phía trên đã nêu cái quan trọng nhất). */
 export default function EnvironmentAlerts({ state, navigation }) {
-  const summary = environmentSummary(state);
-  const color = summary.tone === 'green' ? c.green : summary.tone === 'red' ? c.red : c.amber;
-  const backgroundColor = summary.tone === 'green' ? c.greenSoft : summary.tone === 'red' ? c.redSoft : c.amberSoft;
-  return <Card style={{ backgroundColor, borderColor: backgroundColor }}>
-    <View style={{ flexDirection: 'row', gap: 10, alignItems: 'center' }}><Ionicons name={summary.tone === 'green' ? 'shield-checkmark-outline' : 'warning-outline'} size={24} color={color} /><Text style={[styles.heading, { flex: 1 }]}>Cảnh báo môi trường</Text></View>
-    <Text style={[styles.value, { color }]}>{summary.label}</Text>
-    {state.alerts.active.slice(0, 2).map(alert => <View key={alert._id} style={{ gap: 4 }}>
-      <Text style={styles.value}>{alertLabels[alert.type] || 'Cảnh báo cảm biến'}</Text>
-      <Text style={styles.body}>{alert.type === 'sensorQuality' ? alert.message : `Lúc kích hoạt: ${alert.value ?? '--'} · Ngưỡng lúc đó: ${alert.threshold ?? '--'} ${alert.type.startsWith('humidity') ? '%' : '°C'}`}</Text>
-    </View>)}
-    <Button title="Xem cảnh báo" icon="chevron-forward-outline" variant="secondary" onPress={() => navigation.navigate('Alerts')} />
+  const rows = state.alerts.active;
+  return <Card>
+    <Text style={styles.heading}>Cảnh báo đang hoạt động</Text>
+    {rows.slice(0, 3).map(alert => {
+      const unit = alert.type.startsWith('humidity') ? '%' : '°C';
+      return <View key={alert._id} style={{ flexDirection: 'row', gap: 6, alignItems: 'flex-start' }}>
+        <Lamp tone={alert.severity === 'critical' ? 'red' : 'amber'} size={10} />
+        <View style={{ flex: 1, gap: 2 }}>
+          <Text style={styles.value}>{alertLabels[alert.type] || 'Cảnh báo cảm biến'}</Text>
+          <Text style={styles.body}>{alert.type === 'sensorQuality' ? alert.message
+            : `Đo được ${formatNumber(alert.value)}${unit}, ngưỡng ${formatNumber(alert.threshold)}${unit}`}</Text>
+        </View>
+      </View>;
+    })}
+    {rows.length > 3 ? <Text style={styles.body}>Còn {rows.length - 3} cảnh báo khác.</Text> : null}
+    <Button title="Mở cảnh báo" variant="secondary" onPress={() => navigation.navigate('Alerts')} />
   </Card>;
 }
