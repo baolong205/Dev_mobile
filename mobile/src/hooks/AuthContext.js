@@ -3,6 +3,7 @@ import * as SecureStore from 'expo-secure-store';
 import { authApi } from '../services/authService';
 import { session } from '../services/session';
 import { resetSocket } from '../services/socketService';
+import { unregisterForNotifications } from '../services/notifications';
 
 const STORAGE_KEY = 'smartstore.session';
 const Context = createContext(null);
@@ -45,7 +46,11 @@ export function AuthProvider({ children }) {
     session.set(result); setNotice(null); setUser(result.user);
     try { await SecureStore.setItemAsync(STORAGE_KEY, JSON.stringify(result)); } catch { /* chỉ giữ trong phiên */ }
   }, []);
-  const logout = useCallback(() => forget(null), [forget]);
+  const logout = useCallback(async () => {
+    // Gỡ push token khi còn phiên, để máy này không nhận thông báo của tài khoản đã đăng xuất.
+    await unregisterForNotifications();
+    await forget(null);
+  }, [forget]);
 
   return <Context.Provider value={{ user, isAdmin: user?.role === 'admin', restoring, notice, login, logout }}>{children}</Context.Provider>;
 }

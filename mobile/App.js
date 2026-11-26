@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { DefaultTheme, NavigationContainer, createNavigationContainerRef } from '@react-navigation/native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
@@ -15,6 +15,8 @@ import { colors as c } from './src/constants/theme';
 import { AuthProvider, useAuth } from './src/hooks/AuthContext';
 import LoginScreen from './src/screens/LoginScreen';
 import { ActivityIndicator, View } from 'react-native';
+import { onNotificationOpened } from './src/services/notifications';
+const SCREENS = ['Dashboard', 'History', 'Charts', 'Alerts', 'Settings'];
 const Tabs = createBottomTabNavigator();
 const navigationRef = createNavigationContainerRef();
 export default function App() {
@@ -28,6 +30,12 @@ function AuthGate() {
   return <MainApp key={user.id} />;
 }
 function MainApp() {
+  // Chạm thông báo hệ thống => mở đúng màn hình (data.screen do backend gửi).
+  useEffect(() => onNotificationOpened(data => {
+    const screen = SCREENS.includes(data?.screen) ? data.screen : 'Alerts';
+    const go = () => (navigationRef.isReady() ? navigationRef.navigate(screen) : setTimeout(go, 200));
+    go();
+  }), []);
   return <SmartStoreProvider>
     <SafeAreaView edges={['top', 'left', 'right']} style={{ flex: 1, backgroundColor: c.background }}>
       <NavigationContainer ref={navigationRef} theme={{ ...DefaultTheme, colors: { ...DefaultTheme.colors, primary: c.primary, background: c.background, card: c.card, text: c.text, border: c.border } }}><Tabs.Navigator tabBar={props => <BottomTabBar {...props} />} screenOptions={{ headerShown: false }}>

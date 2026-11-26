@@ -9,12 +9,21 @@
       "supportsTablet": true
     },
     "android": {
-      "package": "com.smartstore.mobile"
+      "package": "com.smartstore.mobile",
+      "permissions": [
+        "POST_NOTIFICATIONS"
+      ]
     },
     "plugins": [
       "expo-font",
       "expo-sharing",
-      "expo-secure-store"
+      "expo-secure-store",
+      [
+        "expo-notifications",
+        {
+          "color": "#2563EB"
+        }
+      ]
     ]
   }
 }

@@ -11,7 +11,9 @@ const repository = {
   async set(mode) { return Mode.findByIdAndUpdate('store', { mode, shift: randomUUID(), changedAt: new Date() }, { upsert: true, new: true }).lean(); },
   async record(shift, at) {
     const row = await Incident.findOneAndUpdate({ shift, reviewedAt: null, lastAt: { $gte: new Date(+at - GROUP_MS), $lte: at } }, { $inc: { count: 1 }, $set: { lastAt: at } }, { sort: { lastAt: -1 }, new: true });
-    if (!row) await Incident.create({ shift, firstAt: at, lastAt: at, count: 1 });
+    if (row) return false;
+    await Incident.create({ shift, firstAt: at, lastAt: at, count: 1 });
+    return true; // sự kiện mới (không gộp vào sự kiện trong 60 giây trước)
   },
   async list() {
     const pending = await Incident.find({ reviewedAt: null }).sort({ lastAt: -1 }).limit(20).lean();
@@ -25,7 +27,7 @@ const repository = {
   }
 };
 
-function createStoreWatch(repo = repository, notify = () => {}) {
+function createStoreWatch(repo = repository, notify = () => {}, onIncident = () => {}) {
   // One backend/MQTT consumer. Serialize mode changes, rising edges and reviews in arrival order.
   let tail = Promise.resolve(), previous = null;
   const run = fn => { const next = tail.then(fn); tail = next.catch(() => {}); return next; };
@@ -37,7 +39,10 @@ function createStoreWatch(repo = repository, notify = () => {}) {
       const rising = previous && previous.motion === false && row.motion === true && previous.session === row.controlSession && at > previous.at && at - previous.at <= 10000;
       previous = { motion: row.motion, at, session: row.controlSession };
       if (!rising) return;
-      return run(async () => { const mode = await repo.mode(); if (mode.mode === 'closed') { await repo.record(mode.shift, new Date(at)); notify(); } });
+      return run(async () => { const mode = await repo.mode(); if (mode.mode === 'closed') {
+        const created = await repo.record(mode.shift, new Date(at)); notify();
+        if (created) { try { onIncident({ at: new Date(at).toISOString() }); } catch { /* kênh phụ */ } }
+      } });
     },
     snapshot: () => run(async () => ({ mode: (await repo.mode()).mode, incidents: await repo.list() })),
     change(mode) {
