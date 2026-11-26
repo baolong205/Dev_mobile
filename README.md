@@ -164,6 +164,12 @@ Sự kiện Socket.IO: `sensor:latest`, `sensor:update`, `sensor:quality`, `syst
 `led:state`, `led:result`, `alert:*`, `store:changed`; client gửi `led:command` (chỉ admin).
 Token gửi khi kết nối: `io(url, { auth: { token } })`; token sai → `connect_error` `INVALID_TOKEN`.
 
+## Nguồn tài nguyên
+
+- Ảnh nền ứng dụng (`mobile/assets/background.jpg`): ["Turquoise and pink soft gradient"](https://unsplash.com/photos/turquoise-and-pink-soft-gradient-znivrLI5ZI4) trên Unsplash, dùng theo [Unsplash License](https://unsplash.com/license).
+- Phong cách giao diện tham khảo thiết kế Zenvest của Orbix Studio.
+- Font [Be Vietnam Pro](https://fonts.google.com/specimen/Be+Vietnam+Pro) (SIL Open Font License).
+
 ## Kiểm thử
 
 ```powershell
