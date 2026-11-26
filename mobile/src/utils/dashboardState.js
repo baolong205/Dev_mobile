@@ -17,7 +17,7 @@ export function environmentSummary(state) {
   if (!['temperatureHigh', 'temperatureLow', 'humidityHigh', 'humidityLow'].some(key => alerts.settings[key]?.enabled)) return { label: 'Chưa bật quy tắc ngưỡng', tone: 'amber' };
   return { label: 'Không có cảnh báo', tone: 'green' };
 }
-/** Trả lời một câu: "Cửa hàng có ổn không?" — câu kết luận + dãy đèn báo như mặt tủ điện. */
+/** Trả lời một câu: "Cửa hàng có ổn không?" (hiện ở chân thẻ chính của Trang chủ). */
 export function verdict(state) {
   const link = connectionSummary(state);
   const active = state.alerts.active;

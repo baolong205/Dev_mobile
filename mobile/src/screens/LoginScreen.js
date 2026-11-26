@@ -2,8 +2,10 @@ import React, { useState } from 'react';
 import { KeyboardAvoidingView, Platform, ScrollView, Text, TextInput, View } from 'react-native';
 import { useAuth } from '../hooks/AuthContext';
 import { API_URL, CONFIG_ERROR } from '../constants/config';
-import { Button, Card, Lamp, styles } from '../components/Common';
-import { colors as c, fonts as f, radius } from '../constants/theme';
+import { LinearGradient } from 'expo-linear-gradient';
+import { Ionicons } from '@expo/vector-icons';
+import { Button, Card, styles } from '../components/Common';
+import { colors as c, fonts as f, iridescent, radius } from '../constants/theme';
 
 const input = { borderWidth: 1, borderColor: c.border, borderRadius: radius.sm, paddingHorizontal: 14, minHeight: 48, fontSize: 16, color: c.text, backgroundColor: c.background, fontFamily: f.regular };
 
@@ -23,13 +25,16 @@ export default function LoginScreen() {
   const message = CONFIG_ERROR || error || notice;
   return <KeyboardAvoidingView style={styles.page} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
     <ScrollView contentContainerStyle={[styles.content, { flexGrow: 1, justifyContent: 'center' }]} keyboardShouldPersistTaps="handled">
-      <View style={{ gap: 6, marginBottom: 8, paddingHorizontal: 4 }}>
-        <View style={{ flexDirection: 'row', gap: 2, marginBottom: 6 }}>
-          <Lamp tone="green" size={12} /><Lamp tone="amber" on={false} size={12} /><Lamp tone="red" on={false} size={12} />
+      <LinearGradient colors={iridescent} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={{ borderRadius: 28, padding: 22, minHeight: 170, justifyContent: 'space-between', overflow: 'hidden' }}>
+        <LinearGradient pointerEvents="none" colors={['#FFFFFFB8', '#FFFFFF00']} start={{ x: 0, y: 0 }} end={{ x: 0.3, y: 1 }} style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }} />
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+          <Ionicons name="storefront" size={15} color={c.text} /><Text style={[styles.value, { fontFamily: f.semibold }]}>SmartStore</Text>
         </View>
-        <Text style={[styles.title, { fontSize: 32 }]}>SmartStore</Text>
-        <Text style={[styles.body, { fontSize: 16 }]}>Đăng nhập để xem tình trạng cửa hàng của bạn.</Text>
-      </View>
+        <View style={{ gap: 4 }}>
+          <Text style={[styles.title, { fontSize: 30, lineHeight: 36 }]}>Chào mừng trở lại</Text>
+          <Text style={[styles.body, { color: '#59606B' }]}>Đăng nhập để xem tình trạng cửa hàng của bạn.</Text>
+        </View>
+      </LinearGradient>
       <Card>
         <Text style={styles.value}>Tên đăng nhập</Text>
         <TextInput style={input} value={username} onChangeText={setUsername} autoCapitalize="none" autoCorrect={false}

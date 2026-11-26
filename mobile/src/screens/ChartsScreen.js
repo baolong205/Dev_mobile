@@ -52,7 +52,7 @@ export default function ChartsScreen() {
     {busy && !rows.length ? <Message title="Đang tải lịch sử" loading /> : !busy && !error && !rows.length ? <Message title="Chưa có bản ghi cảm biến" /> : null}
     <View style={{ flexDirection: 'row', gap: 12 }}><SensorCard title="Nhiệt độ TB phạm vi" icon="thermometer-outline" value={temperature.average} unit="°C" /><SensorCard title="Độ ẩm TB phạm vi" icon="water-outline" value={humidity.average} unit="%" /></View>
     <SensorLineChart rows={rows} field="temperature" title="Diễn biến nhiệt độ" unit="°C" />
-    <SensorLineChart rows={rows} field="humidity" title="Diễn biến độ ẩm" unit="%" color={c.deepBlue} />
+    <SensorLineChart rows={rows} field="humidity" title="Diễn biến độ ẩm" unit="%" />
     <Card><Text style={styles.heading}>Phạm vi đang hiển thị</Text><Row label="Số bản ghi đã tải" value={String(rows.length)} />
       <Row label="Nhiệt độ thấp / cao" value={`${formatNumber(temperature.min)} / ${formatNumber(temperature.max)} °C`} />
       <Row label="Độ ẩm thấp / cao" value={`${formatNumber(humidity.min)} / ${formatNumber(humidity.max)} %`} />
