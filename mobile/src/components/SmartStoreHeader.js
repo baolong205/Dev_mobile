@@ -1,7 +1,7 @@
 import React from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { colors as c, fonts as f } from '../constants/theme';
+import { colors as c, fonts as f, onPhoto, onPhotoMuted } from '../constants/theme';
 
 /**
  * Tiêu đề kiểu Zenvest: dòng phụ nhỏ phía trên, tiêu đề lớn nét thường.
@@ -10,7 +10,7 @@ import { colors as c, fonts as f } from '../constants/theme';
 export default function SmartStoreHeader({ title = 'SmartStore', subtitle, onNotifications, count = 0, brand = false, initial }) {
   return <View style={{ gap: 18 }}>
     {brand ? <View style={s.brandRow}>
-      <View style={s.logo}><Ionicons name="storefront" size={14} color={c.text} /><Text style={s.brand}>SmartStore</Text></View>
+      <View style={s.logo}><Ionicons name="storefront" size={14} color="#FFFFFF" /><Text style={s.brand}>SmartStore</Text></View>
       <View style={{ flexDirection: 'row', gap: 8 }}>
         {onNotifications ? <Pressable accessibilityRole="button" accessibilityLabel={count ? `Mở ${count} cảnh báo đang hoạt động` : 'Mở cảnh báo'}
           onPress={onNotifications} style={({ pressed }) => [s.circle, { opacity: pressed ? 0.7 : 1 }]}>
@@ -29,12 +29,12 @@ export default function SmartStoreHeader({ title = 'SmartStore', subtitle, onNot
 const s = StyleSheet.create({
   brandRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 2 },
   logo: { flexDirection: 'row', alignItems: 'center', gap: 6 },
-  brand: { fontSize: 14, fontFamily: f.semibold, color: c.text, letterSpacing: -0.2 },
+  // Đầu trang nằm thẳng trên ảnh nền: chữ trắng có bóng.
+  brand: { fontSize: 14, fontFamily: f.semibold, letterSpacing: -0.2, ...onPhoto },
   circle: { width: 38, height: 38, borderRadius: 19, backgroundColor: c.card, borderWidth: 1, borderColor: c.border, alignItems: 'center', justifyContent: 'center' },
   dot: { position: 'absolute', top: 9, right: 10, width: 7, height: 7, borderRadius: 4, backgroundColor: c.red, borderWidth: 1.5, borderColor: c.card },
   avatar: { backgroundColor: '#E4E9F6' },
   avatarText: { fontSize: 14, fontFamily: f.semibold, color: c.text },
-  // Nằm trực tiếp trên ảnh nền: dùng màu đậm hơn chữ phụ thông thường cho đủ tương phản.
-  subtitle: { color: '#3B4049', fontSize: 13, fontFamily: f.medium },
-  title: { color: c.text, fontSize: 26, lineHeight: 32, fontFamily: f.regular, letterSpacing: -0.7 },
+  subtitle: { fontSize: 13, fontFamily: f.medium, ...onPhotoMuted },
+  title: { fontSize: 26, lineHeight: 32, fontFamily: f.medium, letterSpacing: -0.7, ...onPhoto },
 });

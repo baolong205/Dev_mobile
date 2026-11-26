@@ -45,7 +45,7 @@ export default function ChartsScreen() {
   return <ScrollView style={styles.page} contentContainerStyle={styles.content} refreshControl={<RefreshControl refreshing={busy} onRefresh={() => setReload(value => value + 1)} />}>
     <PageHeader title="Biểu đồ cảm biến" icon="bar-chart-outline" subtitle="Nhiệt độ và độ ẩm từ lịch sử thực tế, nối tiếp với số đo realtime." />
     <PeriodReport focused={focused} revision={reload} />
-    <Text style={styles.heading}>Chi tiết mẫu gần nhất · Realtime</Text>
+    <Text style={styles.photoHeading}>Chi tiết mẫu gần nhất · Realtime</Text>
     <View style={styles.wrap}>{[20, 60, 100].map(count => <FilterChip key={count} title={`${count} bản ghi`} selected={limit === count} onPress={() => setLimit(count)} />)}</View>
     <Badge label={stale || connection !== 'connected' ? 'Dữ liệu gần nhất · Chờ cập nhật' : 'Đang nhận số đo realtime'} tone={stale || connection !== 'connected' ? 'amber' : 'green'} />
     {error ? <Message title="Không tải được dữ liệu biểu đồ" detail={`${error} Dữ liệu đang hiển thị có thể là lần tải trước.`} error onRetry={() => setReload(value => value + 1)} /> : null}

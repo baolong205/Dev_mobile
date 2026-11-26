@@ -34,7 +34,7 @@ export default function HistoryScreen() {
     ListHeaderComponent={<View style={{ gap: 16 }}><PageHeader title="Lịch sử cảm biến" icon="time-outline" subtitle={`${total} ${kind === 'motion' ? 'lượt chuyển động' : 'bản ghi'} trong khoảng đã chọn`} />
       <PeriodSelector value={period} onChange={setPeriod} />
       <View style={styles.wrap}><FilterChip title="Tất cả số đo" selected={kind === 'sensors'} onPress={() => setKind('sensors')} /><FilterChip title="Lượt chuyển động PIR" selected={kind === 'motion'} onPress={() => setKind('motion')} /></View>
-      <Text style={styles.body}>20 bản ghi mỗi trang · Kéo xuống để làm mới. Lượt PIR chỉ tính false → true cùng phiên, không tính trạng thái true ban đầu hoặc sau gián đoạn.</Text>
+      <Text style={styles.photoBody}>20 bản ghi mỗi trang · Kéo xuống để làm mới. Lượt PIR chỉ tính false → true cùng phiên, không tính trạng thái true ban đầu hoặc sau gián đoạn.</Text>
       {error ? <Message title="Không tải được lịch sử" detail={error} error onRetry={() => load(failedPage)} /> : null}</View>}
     ListEmptyComponent={busy ? <Message title="Đang tải lịch sử" loading /> : !error ? <Message title="Chưa có lịch sử" detail="Không có bản ghi nào trong cơ sở dữ liệu." /> : null}
     renderItem={({ item }) => <Card><Text style={styles.heading}>{formatTime(item.receivedAt)}</Text>

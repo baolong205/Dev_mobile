@@ -30,7 +30,7 @@ export default function App() {
   const [fontsLoaded, fontError] = useFonts({ BeVietnamPro_300Light, BeVietnamPro_400Regular, BeVietnamPro_500Medium, BeVietnamPro_600SemiBold, BeVietnamPro_700Bold });
   // Lỗi tải font: vẫn chạy với font hệ thống thay vì kẹt ở màn hình chờ.
   if (!fontsLoaded && !fontError) return <View style={{ flex: 1, backgroundColor: c.background }} />;
-  return <SafeAreaProvider><StatusBar style="dark" /><AppBackground><AuthProvider><AuthGate /></AuthProvider></AppBackground></SafeAreaProvider>;
+  return <SafeAreaProvider><StatusBar style="light" /><AppBackground><AuthProvider><AuthGate /></AuthProvider></AppBackground></SafeAreaProvider>;
 }
 function AuthGate() {
   const { user, restoring } = useAuth();

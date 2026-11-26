@@ -1,7 +1,7 @@
 import React, { useEffect, useRef } from 'react';
 import { ActivityIndicator, Animated, Pressable, StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { colors as c, fonts as f, radius, shadow, spacing, typography } from '../constants/theme';
+import { colors as c, fonts as f, onPhoto, onPhotoMuted, radius, shadow, spacing, typography } from '../constants/theme';
 import SmartStoreHeader from './SmartStoreHeader';
 
 /** Tấm trắng bo lớn, bóng rất mềm. */
@@ -102,7 +102,7 @@ export const styles = StyleSheet.create({
   round: { flex: 1, alignItems: 'center', gap: 8, minWidth: 0 },
   roundIcon: { width: 54, height: 54, borderRadius: 27, backgroundColor: c.card, borderWidth: 1, borderColor: c.border,
     alignItems: 'center', justifyContent: 'center', ...shadow },
-  roundLabel: { fontSize: 12, lineHeight: 16, fontFamily: f.medium, color: c.text, textAlign: 'center' },
+  roundLabel: { fontSize: 12, lineHeight: 16, fontFamily: f.semibold, textAlign: 'center', ...onPhoto },
   track: { width: 46, height: 26, borderRadius: 13, padding: 3, justifyContent: 'center' },
   knob: { width: 20, height: 20, borderRadius: 10, backgroundColor: '#FFFFFF',
     shadowColor: '#000', shadowOpacity: 0.15, shadowRadius: 3, shadowOffset: { width: 0, height: 1 }, elevation: 2 },
@@ -110,4 +110,7 @@ export const styles = StyleSheet.create({
   chipText: { fontSize: 13, fontFamily: f.medium },
   infoRow: { flexDirection: 'row', gap: 16, paddingVertical: 8, borderTopWidth: 1, borderTopColor: c.hairline },
   wrap: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
+  // Chữ đặt thẳng trên ảnh nền (ngoài thẻ trắng).
+  photoHeading: { fontSize: typography.heading, fontFamily: f.semibold, letterSpacing: -0.2, ...onPhoto },
+  photoBody: { fontSize: 13, lineHeight: 20, fontFamily: f.medium, ...onPhotoMuted },
 });

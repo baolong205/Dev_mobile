@@ -29,13 +29,13 @@ export default function DashboardScreen({ navigation }) {
       <RoundAction icon="notifications-outline" label="Cảnh báo" active={alerts.active.length > 0} onPress={() => navigation.navigate('Alerts')} />
     </View>
     {/* Tấm kính trắng mờ: chữ ghi chú không đặt thẳng lên ảnh nền. */}
-    <View style={{ gap: 6, padding: 14, borderRadius: 20, backgroundColor: '#FFFFFFC7', borderWidth: 1, borderColor: '#FFFFFF' }}>
+    <View style={{ gap: 6, padding: 14, borderRadius: 20, backgroundColor: '#FFFFFFE6', borderWidth: 1, borderColor: '#FFFFFF' }}>
       <SensorQualityBadge quality={alerts.quality} settings={alerts.settings} stale={state.stale} />
     </View>
     {alerts.active.length ? <EnvironmentAlerts state={state} navigation={navigation} /> : null}
     <LiveStore state={state} />
     <LedControls state={state} />
     <StoreWatch />
-    <Text style={[styles.body, { fontSize: 12, paddingHorizontal: 4 }]}>Số đo gốc từ ESP32, không tự hiệu chỉnh.</Text>
+    <Text style={[styles.photoBody, { fontSize: 12, paddingHorizontal: 4 }]}>Số đo gốc từ ESP32, không tự hiệu chỉnh.</Text>
   </ScrollView>;
 }

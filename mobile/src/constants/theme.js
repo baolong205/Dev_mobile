@@ -19,6 +19,9 @@ export const colors = {
   lampOff: '#C9CED6',
   lip: '#E8EBEF',
 };
+// Chữ đặt thẳng trên ảnh nền (tối): trắng, có bóng mềm để luôn đọc được.
+export const onPhoto = { color: '#FFFFFF', textShadowColor: '#0000008C', textShadowOffset: { width: 0, height: 1 }, textShadowRadius: 6 };
+export const onPhotoMuted = { ...onPhoto, color: '#FFFFFFD9' };
 // Dải màu ánh xà cừ cho thẻ chính (xanh băng → tím khói → hồng đào).
 export const iridescent = ['#D2DFF5', '#E3DCF4', '#F5D2E0', '#F9C3B6'];
 export const fonts = {

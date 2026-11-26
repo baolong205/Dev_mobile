@@ -9,14 +9,15 @@ import { colors as c } from '../constants/theme';
 const IMAGE = require('../../assets/background.jpg');
 
 /**
- * Nền chung: ảnh hoa dahlia làm mờ nhẹ, phủ lớp trắng ngà (đậm dần xuống dưới)
- * vì ảnh gốc tối — giữ được sắc cam/xanh lá mà chữ đen và thẻ trắng vẫn dễ đọc.
+ * Nền chung: ảnh hoa dahlia hiển thị gần như nguyên bản. Chữ đặt thẳng trên ảnh dùng
+ * kiểu `onPhoto` (trắng, có bóng) trong theme; nội dung chính nằm trong thẻ trắng.
  * Ảnh đặt tuyệt đối trong khung để không bao giờ làm khung giãn theo kích thước ảnh gốc.
  */
 export default memo(function AppBackground({ children }) {
   return <View style={s.root}>
-    <Image source={IMAGE} resizeMode="cover" blurRadius={3} style={s.image} accessibilityIgnoresInvertColors />
-    <LinearGradient pointerEvents="none" colors={['#FFFBF866', '#FFFBF894', '#F7F5F3D9']} locations={[0, 0.45, 1]} style={StyleSheet.absoluteFill} />
+    <Image source={IMAGE} resizeMode="cover" style={s.image} accessibilityIgnoresInvertColors />
+    {/* Chỉ một lớp tối rất nhẹ ở trên cùng để chữ trắng của tiêu đề đọc được; giữa ảnh để nguyên. */}
+    <LinearGradient pointerEvents="none" colors={['#00000047', '#00000000', '#00000000', '#00000026']} locations={[0, 0.3, 0.75, 1]} style={StyleSheet.absoluteFill} />
     {children}
   </View>;
 });

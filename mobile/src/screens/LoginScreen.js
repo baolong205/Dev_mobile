@@ -45,7 +45,7 @@ export default function LoginScreen() {
         {message ? <Text accessibilityLiveRegion="polite" style={{ color: CONFIG_ERROR || error ? c.red : c.amber, lineHeight: 21 }}>{message}</Text> : null}
         <Button title={busy ? 'Đang đăng nhập…' : 'Đăng nhập'} icon="log-in-outline" disabled={busy || !!CONFIG_ERROR} onPress={submit} />
       </Card>
-      <Text style={[styles.body, { textAlign: 'center', fontSize: 12 }]}>Backend: {API_URL || 'chưa cấu hình'}</Text>
+      <Text style={[styles.photoBody, { textAlign: 'center', fontSize: 12 }]}>Backend: {API_URL || 'chưa cấu hình'}</Text>
     </ScrollView>
   </KeyboardAvoidingView>;
 }
