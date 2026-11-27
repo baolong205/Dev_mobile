@@ -42,15 +42,15 @@ export default function AlertScreen({ navigation }) {
     </Card>
     {!online ? <Message title="Mất realtime" detail="Danh sách có thể cũ; không kết luận điều kiện đã bình thường. Sẽ đồng bộ khi kết nối lại." /> : null}
     {alerts.error ? <Message title="Chưa đồng bộ cảnh báo" detail={alerts.error} error /> : null}
-    <Text style={styles.heading}>Đang hoạt động ({alerts.active.length})</Text>
-    <Text style={styles.body}>Giá trị lúc kích hoạt được giữ làm lịch sử. Số đo hiện tại bên dưới cập nhật theo cảm biến; mỗi mẫu mới không tạo lại cùng một cảnh báo đang hoạt động.</Text>
+    <Text style={styles.photoHeading}>Đang hoạt động ({alerts.active.length})</Text>
+    <Text style={styles.photoBody}>Giá trị lúc kích hoạt được giữ làm lịch sử. Số đo hiện tại bên dưới cập nhật theo cảm biến; mỗi mẫu mới không tạo lại cùng một cảnh báo đang hoạt động.</Text>
     {alerts.active.map(alert => <AlertCard key={alert._id} alert={alert} acknowledge={alerts.acknowledge} remove={alerts.remove} online={online} />)}
-    {!alerts.active.length ? <Text style={styles.body}>{alerts.loading || alerts.error ? 'Chưa xác định đầy đủ.' : 'Không có cảnh báo ACTIVE đã lưu.'}</Text> : null}
-    <Text style={styles.heading}>Lịch sử cảnh báo</Text>
+    {!alerts.active.length ? <Text style={styles.photoBody}>{alerts.loading || alerts.error ? 'Chưa xác định đầy đủ.' : 'Không có cảnh báo ACTIVE đã lưu.'}</Text> : null}
+    <Text style={styles.photoHeading}>Lịch sử cảnh báo</Text>
     <PeriodSelector value={period} onChange={setPeriod} />
     <View style={styles.wrap}><FilterChip title="Tất cả" selected={type === ''} onPress={() => setType('')} />
       {Object.entries(alertLabels).map(([key, label]) => <FilterChip key={key} title={label} selected={type === key} onPress={() => setType(key)} />)}</View>
-    <Text style={styles.body}>Dùng nút Xóa ở mỗi cảnh báo đã kết thúc để dọn lịch sử.</Text>
+    <Text style={styles.photoBody}>Dùng nút Xóa ở mỗi cảnh báo đã kết thúc để dọn lịch sử.</Text>
     {error ? <Message title="Không tải được lịch sử" detail={error} error onRetry={() => setReload(value => value + 1)} /> : null}
     {rows.map(alert => <AlertCard key={alert._id} alert={alert} acknowledge={alerts.acknowledge} remove={alerts.remove} online={online} />)}
     {!busy && !error && !rows.length ? <Message title="Chưa có lịch sử cảnh báo" /> : null}

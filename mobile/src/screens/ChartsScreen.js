@@ -45,14 +45,14 @@ export default function ChartsScreen() {
   return <ScrollView style={styles.page} contentContainerStyle={styles.content} refreshControl={<RefreshControl refreshing={busy} onRefresh={() => setReload(value => value + 1)} />}>
     <PageHeader title="Biểu đồ cảm biến" icon="bar-chart-outline" subtitle="Nhiệt độ và độ ẩm từ lịch sử thực tế, nối tiếp với số đo realtime." />
     <PeriodReport focused={focused} revision={reload} />
-    <Text style={styles.heading}>Chi tiết mẫu gần nhất · Realtime</Text>
+    <Text style={styles.photoHeading}>Chi tiết mẫu gần nhất · Realtime</Text>
     <View style={styles.wrap}>{[20, 60, 100].map(count => <FilterChip key={count} title={`${count} bản ghi`} selected={limit === count} onPress={() => setLimit(count)} />)}</View>
     <Badge label={stale || connection !== 'connected' ? 'Dữ liệu gần nhất · Chờ cập nhật' : 'Đang nhận số đo realtime'} tone={stale || connection !== 'connected' ? 'amber' : 'green'} />
     {error ? <Message title="Không tải được dữ liệu biểu đồ" detail={`${error} Dữ liệu đang hiển thị có thể là lần tải trước.`} error onRetry={() => setReload(value => value + 1)} /> : null}
     {busy && !rows.length ? <Message title="Đang tải lịch sử" loading /> : !busy && !error && !rows.length ? <Message title="Chưa có bản ghi cảm biến" /> : null}
     <View style={{ flexDirection: 'row', gap: 12 }}><SensorCard title="Nhiệt độ TB phạm vi" icon="thermometer-outline" value={temperature.average} unit="°C" /><SensorCard title="Độ ẩm TB phạm vi" icon="water-outline" value={humidity.average} unit="%" /></View>
     <SensorLineChart rows={rows} field="temperature" title="Diễn biến nhiệt độ" unit="°C" />
-    <SensorLineChart rows={rows} field="humidity" title="Diễn biến độ ẩm" unit="%" color={c.deepBlue} />
+    <SensorLineChart rows={rows} field="humidity" title="Diễn biến độ ẩm" unit="%" />
     <Card><Text style={styles.heading}>Phạm vi đang hiển thị</Text><Row label="Số bản ghi đã tải" value={String(rows.length)} />
       <Row label="Nhiệt độ thấp / cao" value={`${formatNumber(temperature.min)} / ${formatNumber(temperature.max)} °C`} />
       <Row label="Độ ẩm thấp / cao" value={`${formatNumber(humidity.min)} / ${formatNumber(humidity.max)} %`} />

@@ -7,6 +7,7 @@ import { useSmartStore } from '../hooks/SmartStoreContext';
 import { Button, Card, PageHeader, Row, styles } from '../components/Common';
 import { useAuth } from '../hooks/AuthContext';
 import ConnectionStatus from '../components/ConnectionStatus';
+import NotificationSettings from '../components/NotificationSettings';
 import { formatNumber, formatTime } from '../utils/formatSensor';
 export default function SystemScreen() {
   const auth = useAuth();
@@ -24,6 +25,7 @@ export default function SystemScreen() {
       {!auth.isAdmin ? <Text style={styles.body}>Tài khoản chỉ xem không thể điều khiển LED hay thay đổi cấu hình.</Text> : null}
       <Button title="Đăng xuất" icon="log-out-outline" variant="danger" onPress={auth.logout} />
     </Card>
+    <NotificationSettings />
     <ConnectionStatus state={state} />
     <Card><Text style={styles.heading}>Thông tin kết nối</Text>
       <Row label="Backend HTTP" value={state.backendReachable === null ? 'Chưa xác định' : state.backendReachable ? 'Có phản hồi' : 'Không truy cập được'} />

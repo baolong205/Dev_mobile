@@ -15,10 +15,27 @@ async function main() {
       .catch(() => console.error('[AUTH] could not create initial admin user'));
   });
   let sockets;
-  const watch = require('./services/storeWatch').createStoreWatch(undefined, () => sockets?.publishStoreChange());
-  const alerts = require('./services/alertRuntime').createAlertRuntime({ emit: (event, data) => sockets?.publishAlert(event, data) });
+  const { createNotifier, createDeviceWatchdog } = require('./services/notificationService');
+  const { describeAlert } = require('./services/notificationMessages');
+  const notifier = createNotifier();
+  const watch = require('./services/storeWatch').createStoreWatch(undefined, () => sockets?.publishStoreChange(),
+    ({ at }) => void notifier.notify('motion', { title: 'Phát hiện chuyển động', body: 'Có chuyển động trong cửa hàng khi đang đóng cửa.', data: { screen: 'Dashboard', at } }));
+  const alerts = require('./services/alertRuntime').createAlertRuntime({ emit: (event, data) => {
+    sockets?.publishAlert(event, data);
+    // Cooldown đã được engine xử lý (notificationSuppressed); tôn trọng công tắc thông báo trong cài đặt.
+    if (event === 'alert:created' && !data.notificationSuppressed && alerts?.notificationsEnabled() !== false) {
+      void notifier.notify('alerts', { ...describeAlert(data), data: { screen: 'Alerts', alertId: String(data._id) } });
+    }
+  } });
+  const device = createDeviceWatchdog({
+    timeoutMs: config.deviceOfflineMs,
+    onOffline: ({ lastSeen }) => void notifier.notify('device', { title: 'ESP32 mất kết nối',
+      body: `Không nhận dữ liệu từ ESP32 trong ${Math.round(config.deviceOfflineMs / 1000)} giây.`, data: { screen: 'Dashboard', lastSeen } }),
+    onOnline: () => void notifier.notify('device', { title: 'ESP32 đã kết nối lại', body: 'Đã nhận lại dữ liệu cảm biến.', data: { screen: 'Dashboard' } })
+  });
   const mqtt = startMqtt(config, {
     onAlertReading: (reading, metadata) => {
+      if (!metadata?.retained) device.seen();
       watch.ingest(reading, metadata)?.catch(() => console.warn('[Store] motion event not saved; check MongoDB'));
       alerts.ingest(reading, metadata);
     },
@@ -28,7 +45,7 @@ async function main() {
     onStatusChange: () => sockets?.publishStatus()
   });
   const server = http.createServer(createApp(mqtt.status, config.cors, alerts, watch,
-    { auth, lanOnlyWrites: config.lanOnlyWrites, trustProxy: config.trustProxy }));
+    { auth, notifier, lanOnlyWrites: config.lanOnlyWrites, trustProxy: config.trustProxy }));
   sockets = createSocketServer(server, {
     cors: config.cors, auth, database: mongoose.connection, getLatest, leds: mqtt.leds, getQuality: alerts.quality,
     getStatus: () => {
@@ -45,7 +62,7 @@ async function main() {
     stopping = true;
     const deadline = setTimeout(() => process.exit(1), 10000);
     deadline.unref();
-    alerts.close();
+    alerts.close(); device.close();
     await Promise.allSettled([sockets.close(), mqtt.close(), closeDatabase()]);
     clearTimeout(deadline);
     process.exit(exitCode);

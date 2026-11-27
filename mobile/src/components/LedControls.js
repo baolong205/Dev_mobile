@@ -1,32 +1,40 @@
 import React from 'react';
-import { Switch, Text, View } from 'react-native';
-import { Badge, Button, Card, Row, styles } from './Common';
+import { StyleSheet, Text, View } from 'react-native';
+import { Card, FilterChip, Lamp, Toggle, styles } from './Common';
 import { formatTime } from '../utils/formatSensor';
-import { colors as c } from '../constants/theme';
+import { colors as c, fonts as f } from '../constants/theme';
 import { useAuth } from '../hooks/AuthContext';
+
 export default function LedControls({ state }) {
   const { ledState, controlReady, commandPending, commandMessage, sendLedCommand } = state;
   const { isAdmin } = useAuth();
   const disabled = !isAdmin || !controlReady || commandPending;
-  return <Card><Text style={styles.heading}>Điều khiển thiết bị</Text>
-    <Badge label={!ledState ? 'Đang chờ trạng thái từ ESP32' : `Chế độ gần nhất: ${ledState.mode === 'auto' ? 'Tự động (AUTO)' : 'Thủ công (MANUAL)'}`} tone={controlReady ? 'green' : 'amber'} />
-    {!isAdmin ? <Text style={styles.body}>Chỉ tài khoản admin được điều khiển LED.</Text> : null}
-    <Text style={styles.body}>{controlReady ? 'ESP32 vừa gửi trạng thái — có thể điều khiển' : 'Chưa xác nhận ESP32 đang sẵn sàng. Điều khiển đã khóa.'}</Text>
-    <View style={{ gap: 10 }}>
-      <Button title="Tự động (AUTO)" icon="flash-outline" variant={ledState?.mode === 'auto' ? 'primary' : 'secondary'} disabled={disabled || ledState?.mode === 'auto'} onPress={() => sendLedCommand({ mode: 'auto' })} />
-      <Button title="Thủ công (MANUAL)" icon="hand-left-outline" variant={ledState?.mode === 'manual' ? 'primary' : 'secondary'} disabled={disabled || ledState?.mode === 'manual'} onPress={() => sendLedCommand({ mode: 'manual' })} />
+  const manual = ledState?.mode === 'manual';
+  const note = !isAdmin ? 'Chỉ tài khoản admin được điều khiển đèn.'
+    : !controlReady ? 'Đang chờ ESP32 gửi trạng thái mới; điều khiển tạm khóa.'
+    : manual ? 'Bạn đang bật/tắt từng đèn bằng tay.' : 'Đèn tự bật theo cảm biến chuyển động.';
+  return <Card>
+    <Text style={styles.heading}>Đèn báo tại cửa hàng</Text>
+    <View style={s.modes} accessibilityRole="radiogroup">
+      <FilterChip title="Tự động" selected={ledState?.mode === 'auto'} onPress={() => !disabled && ledState?.mode !== 'auto' && sendLedCommand({ mode: 'auto' })} />
+      <FilterChip title="Bằng tay" selected={manual} onPress={() => !disabled && !manual && sendLedCommand({ mode: 'manual' })} />
     </View>
-    {['ledGreen', 'ledRed'].map((key, index) => <View key={key} style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
-      <View style={{ flex: 1 }}><Text style={styles.value}>{index === 0 ? 'LED xanh · GPIO25' : 'LED đỏ · GPIO26'}</Text>
-        <Text style={styles.body}>{!ledState ? '--' : `${ledState[key] ? 'Bật' : 'Tắt'}${controlReady ? '' : ' (trạng thái cũ)'}`}</Text></View>
-      <Switch accessibilityLabel={index === 0 ? 'Điều khiển LED xanh' : 'Điều khiển LED đỏ'}
-        value={ledState?.[key] === true} disabled={disabled || ledState?.mode !== 'manual'}
-        onValueChange={value => sendLedCommand({ mode: 'manual', [key]: value })}
-        trackColor={{ true: c.primary, false: '#CBD5E1' }} />
+    <Text style={styles.body}>{note}</Text>
+    {[['ledGreen', 'Đèn xanh', 'green'], ['ledRed', 'Đèn đỏ', 'red']].map(([key, label, tone]) => <View key={key} style={s.row}>
+      <Lamp tone={tone} on={ledState?.[key] === true} size={14} />
+      <View style={{ flex: 1 }}>
+        <Text style={styles.value}>{label}</Text>
+        <Text style={[styles.body, { fontSize: 13 }]}>{!ledState ? 'Chưa rõ' : ledState[key] ? 'Đang sáng' : 'Đang tắt'}{ledState && !controlReady ? ' (trạng thái cũ)' : ''}</Text>
+      </View>
+      <Toggle accessibilityLabel={`Bật tắt ${label.toLowerCase()}`} tone={tone} value={ledState?.[key] === true}
+        disabled={disabled || !manual} onValueChange={value => sendLedCommand({ mode: 'manual', [key]: value })} />
     </View>)}
-    {ledState?.mode === 'auto' ? <Text style={styles.body}>PIR đang tự điều khiển LED; công tắc thủ công bị vô hiệu hóa.</Text> : null}
-    <Row label="Cập nhật LED" value={formatTime(ledState?.receivedAt)} />
-    {commandMessage ? <Text accessibilityLiveRegion="polite" style={{ color: commandPending ? c.primary : c.muted, lineHeight: 21 }}>{commandMessage}</Text> : null}
-    <Text style={[styles.body, { fontSize: 12 }]}>Chỉ hai LED qua điện trở hạn dòng. Không điều khiển thiết bị điện công suất lớn.</Text>
+    {commandMessage ? <Text accessibilityLiveRegion="polite" style={[s.message, { color: commandPending ? c.primary : c.muted }]}>{commandMessage}</Text> : null}
+    <Text style={[styles.body, { fontSize: 12 }]}>Cập nhật {formatTime(ledState?.receivedAt)}</Text>
   </Card>;
 }
+const s = StyleSheet.create({
+  modes: { flexDirection: 'row', gap: 8 },
+  row: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 6, borderTopWidth: 1, borderTopColor: '#EDF0F3' },
+  message: { fontSize: 14, lineHeight: 21, fontFamily: f.medium },
+});

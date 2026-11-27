@@ -86,6 +86,7 @@ function createAlertRuntime({ emit = () => {} } = {}) {
   return { ingest, engine,
     getSettings() { readyRequired(); return { ...settings }; },
     quality: () => latestQuality,
+    notificationsEnabled: () => settings.notificationsEnabled !== false,
     updateSettings,
     async list(query = {}) {
       databaseRequired(); const filter = filters(query), { page, limit } = parsePagination(query);

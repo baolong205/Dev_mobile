@@ -48,11 +48,14 @@ function createApp(mqttStatus = () => ({ connected: false, subscribed: false }),
   app.use('/api', (req, res, next) => {
     if (READ_METHODS.has(req.method)) return next();
     if (lanOnlyWrites && !trustedAddress(req.socket.remoteAddress)) return next(httpError(403, 'LAN_ONLY', 'Chỉ thay đổi từ mạng LAN tin cậy.'));
-    const guard = auth ? auth.requireRole('admin') : (_q, _s, done) => done();
+    // Push token là dữ liệu của chính người dùng: viewer cũng được đăng ký/hủy.
+    const ownData = req.path.startsWith('/notifications/');
+    const guard = auth && !ownData ? auth.requireRole('admin') : (_q, _s, done) => done();
     guard(req, res, error => (error ? next(error) : writeLimiter(req, res, next)));
   });
 
   app.use('/api/sensors', sensorRoutes);
+  if (options.notifier) app.use('/api/notifications', require('./routes/notificationRoutes').createNotificationRoutes(options.notifier));
   if (watch) app.use('/api/store-watch', require('./routes/storeWatchRoutes').createStoreWatchRoutes(watch));
   app.use('/api', require('./routes/alertRoutes').createAlertRoutes(alerts));
   app.use((_req, res) => res.status(404).json({ success: false, error: { code: 'NOT_FOUND', message: 'Route not found' } }));

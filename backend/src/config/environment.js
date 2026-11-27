@@ -25,10 +25,12 @@ function loadConfig(env = process.env) {
   const adminUsername = env.ADMIN_USERNAME || 'admin';
   if (!/^[a-z0-9._-]{3,32}$/i.test(adminUsername)) throw new Error('Invalid ADMIN_USERNAME');
   const lanOnlyWrites = env.LAN_ONLY_WRITES !== 'false';
+  const deviceOfflineMs = Number(env.DEVICE_OFFLINE_SECONDS || 60) * 1000;
+  if (!Number.isFinite(deviceOfflineMs) || deviceOfflineMs < 10000) throw new Error('DEVICE_OFFLINE_SECONDS must be >= 10');
   return { port, mqttUrl, mongoUri, topic, debugSensor: env.DEBUG_SENSOR === 'true',
     mqttUsername: env.MQTT_USERNAME || undefined, mqttPassword: env.MQTT_PASSWORD || undefined,
     auth: { secret: jwtSecret, expiresIn: env.JWT_EXPIRES_IN || '12h', adminUsername, adminPassword: env.ADMIN_PASSWORD || '' },
-    lanOnlyWrites, trustProxy: env.TRUST_PROXY === 'true' ? 1 : false,
+    lanOnlyWrites, deviceOfflineMs, trustProxy: env.TRUST_PROXY === 'true' ? 1 : false,
     cors: { origin: !origins.length || origins.includes('*') ? true : origins } };
 }
 module.exports = { loadConfig };

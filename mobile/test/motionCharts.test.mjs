@@ -41,6 +41,7 @@ test('chart gaps and null samples are not interpolated, constant series has fini
   const rows = [row(0), row(1), row(2, false, { humidity: null }), row(3), row(20)];
   const graph = chartGeometry(rows, 'humidity', 250);
   assert.equal(graph.points.length, 4); assert.equal(graph.segments.length, 1);
+  assert.deepEqual(graph.points.map(point => point.joined), [false, true, false, false], 'null and 17s gap break the line');
   assert.ok(graph.points.every(point => Number.isFinite(point.x) && Number.isFinite(point.y)));
   assert.equal(chartGeometry([], 'temperature', 250).points.length, 0);
 });

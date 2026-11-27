@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
-import { Alert, KeyboardAvoidingView, Platform, ScrollView, Switch, Text, TextInput, View } from 'react-native';
+import { Alert, KeyboardAvoidingView, Platform, ScrollView, Text, TextInput, View } from 'react-native';
 import { useSmartStore } from '../hooks/SmartStoreContext';
-import { Button, Card, Message, PageHeader, styles } from '../components/Common';
+import { Button, Card, Message, PageHeader, Toggle, styles } from '../components/Common';
 import { alertsApi } from '../services/alertService';
 import { alertLabels, settingsPayload } from '../utils/alertData';
 import { colors as c } from '../constants/theme';
@@ -14,7 +14,7 @@ export default function AlertSettingsScreen() {
   const field = (label, value, update) => <View style={{ gap: 6 }}><Text style={styles.body}>{label}</Text><TextInput accessibilityLabel={label}
     value={String(value)} editable={!disabled} keyboardType="decimal-pad" onChangeText={update}
     style={{ borderWidth: 1, borderColor: c.border, borderRadius: 16, padding: 16, fontSize: 18, fontWeight: '600', color: c.navy, backgroundColor: c.background }} /></View>;
-  const toggle = (label, value, change) => <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}><Text style={[styles.body, { flex: 1 }]}>{label}</Text><Switch disabled={disabled} value={value} onValueChange={change} /></View>;
+  const toggle = (label, value, change) => <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}><Text style={[styles.body, { flex: 1 }]}>{label}</Text><Toggle accessibilityLabel={label} disabled={disabled} value={value} onValueChange={change} /></View>;
   if (!form) return <ScrollView style={styles.page} contentContainerStyle={styles.content}><Text style={styles.title}>Cài đặt cảnh báo</Text><Message title="Chưa tải được cấu hình" detail={alerts.error || 'Đang đồng bộ với Backend.'} onRetry={alerts.refresh} /></ScrollView>;
   return <KeyboardAvoidingView style={styles.page} behavior={Platform.OS === 'ios' ? 'padding' : undefined}><ScrollView keyboardShouldPersistTaps="handled" style={styles.page} contentContainerStyle={styles.content}>
     <PageHeader title="Ngưỡng & giám sát" icon="options-outline" subtitle="Cá nhân hóa quy tắc cảnh báo, số mẫu xác nhận và tần suất thông báo." />

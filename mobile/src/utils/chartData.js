@@ -20,8 +20,10 @@ export function chartGeometry(rows, field, width, height = 160, maxGapMs = 10000
     const value = row[field];
     if (typeof value !== 'number' || !Number.isFinite(value)) { previous = null; continue; }
     const point = { x: span ? (Date.parse(row.receivedAt) - start) / span * width : width / 2, y: (max - value) / (max - min) * height, time: Date.parse(row.receivedAt), value };
+    // joined = nối với điểm trước (không có null xen giữa, không mất dữ liệu quá maxGapMs).
+    point.joined = Boolean(previous && point.time - previous.time <= maxGapMs);
     points.push(point);
-    if (previous && point.time - previous.time <= maxGapMs) {
+    if (point.joined) {
       const dx = point.x - previous.x, dy = point.y - previous.y;
       segments.push({ x: (point.x + previous.x) / 2, y: (point.y + previous.y) / 2, length: Math.hypot(dx, dy), angle: `${Math.atan2(dy, dx)}rad` });
     }

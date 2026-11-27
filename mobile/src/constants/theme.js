@@ -1,10 +1,38 @@
+// Phong cách tham chiếu: Zenvest (Orbix Studio) — nền sáng mát, thẻ gradient ánh xà cừ,
+// số lớn nét mảnh, nút viên thuốc đen, nút tròn trắng có nhãn, đường biểu đồ mảnh.
 export const colors = {
-  primary: '#0866E8', deepBlue: '#0646B7', navy: '#18233B', background: '#F4F8FF', card: '#FFFFFF',
-  text: '#18233B', muted: '#64748B', border: '#E4ECF7', green: '#16A34A',
-  red: '#EF4444', amber: '#A66308', blueSoft: '#EAF4FF', greenSoft: '#EFFBF3',
-  redSoft: '#FFF0F0', amberSoft: '#FFF7E6',
+  background: '#F2F4F7', // nền xám trắng mát
+  card: '#FFFFFF',
+  sheet: '#FFFFFF',
+  text: '#101318', // mực gần đen của chữ và nút chính
+  navy: '#101318',
+  muted: '#8A919C',
+  border: '#E8EBEF',
+  hairline: '#EEF0F3',
+  primary: '#101318', // hành động chính = nút đen
+  deepBlue: '#101318',
+  accent: '#5B7CFA', // xanh dịu cho điểm nhấn nhỏ
+  green: '#1FA971',
+  red: '#E5484D',
+  amber: '#C2780B',
+  blueSoft: '#EEF2FF', greenSoft: '#E8F7F0', redSoft: '#FDECEC', amberSoft: '#FCF3E3',
+  lampOff: '#C9CED6',
+  lip: '#E8EBEF',
+};
+// Chữ đặt thẳng trên ảnh nền (tối): trắng, có bóng mềm để luôn đọc được.
+export const onPhoto = { color: '#FFFFFF', textShadowColor: '#0000008C', textShadowOffset: { width: 0, height: 1 }, textShadowRadius: 6 };
+export const onPhotoMuted = { ...onPhoto, color: '#FFFFFFD9' };
+// Dải màu ánh xà cừ cho thẻ chính (xanh băng → tím khói → hồng đào).
+export const iridescent = ['#D2DFF5', '#E3DCF4', '#F5D2E0', '#F9C3B6'];
+export const fonts = {
+  light: 'BeVietnamPro_300Light',
+  regular: 'BeVietnamPro_400Regular',
+  medium: 'BeVietnamPro_500Medium',
+  semibold: 'BeVietnamPro_600SemiBold',
+  bold: 'BeVietnamPro_700Bold',
 };
 export const spacing = { xs: 6, sm: 12, md: 16, lg: 20, xl: 24 };
-export const radius = { sm: 12, md: 20, lg: 24 };
-export const typography = { title: 26, heading: 17, body: 14, caption: 12, measurement: 38 };
-export const shadow = { shadowColor: '#174888', shadowOffset: { width: 0, height: 5 }, shadowOpacity: 0.07, shadowRadius: 14, elevation: 2 };
+export const radius = { sm: 14, md: 20, lg: 28, pill: 999 };
+export const typography = { caption: 12, body: 15, heading: 17, title: 26, measurement: 48 };
+// Bóng rất mềm, chỉ dùng cho thẻ nổi (thẻ chính, tấm danh sách).
+export const shadow = { shadowColor: '#1B2A44', shadowOpacity: 0.06, shadowRadius: 18, shadowOffset: { width: 0, height: 8 }, elevation: 2 };

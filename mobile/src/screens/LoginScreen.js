@@ -1,12 +1,13 @@
 import React, { useState } from 'react';
 import { KeyboardAvoidingView, Platform, ScrollView, Text, TextInput, View } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../hooks/AuthContext';
 import { API_URL, CONFIG_ERROR } from '../constants/config';
+import { LinearGradient } from 'expo-linear-gradient';
+import { Ionicons } from '@expo/vector-icons';
 import { Button, Card, styles } from '../components/Common';
-import { colors as c, radius } from '../constants/theme';
+import { colors as c, fonts as f, iridescent, radius } from '../constants/theme';
 
-const input = { borderWidth: 1, borderColor: c.border, borderRadius: radius.sm, paddingHorizontal: 14, minHeight: 48, fontSize: 16, color: c.text, backgroundColor: c.background };
+const input = { borderWidth: 1, borderColor: c.border, borderRadius: radius.sm, paddingHorizontal: 14, minHeight: 48, fontSize: 16, color: c.text, backgroundColor: c.background, fontFamily: f.regular };
 
 export default function LoginScreen() {
   const { login, notice } = useAuth();
@@ -24,11 +25,16 @@ export default function LoginScreen() {
   const message = CONFIG_ERROR || error || notice;
   return <KeyboardAvoidingView style={styles.page} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
     <ScrollView contentContainerStyle={[styles.content, { flexGrow: 1, justifyContent: 'center' }]} keyboardShouldPersistTaps="handled">
-      <View style={{ alignItems: 'center', gap: 8, marginBottom: 8 }}>
-        <Ionicons name="storefront-outline" size={44} color={c.primary} />
-        <Text style={styles.title}>SmartStore</Text>
-        <Text style={styles.body}>Đăng nhập để theo dõi cửa hàng</Text>
-      </View>
+      <LinearGradient colors={iridescent} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={{ borderRadius: 28, padding: 22, minHeight: 170, justifyContent: 'space-between', overflow: 'hidden' }}>
+        <LinearGradient pointerEvents="none" colors={['#FFFFFFB8', '#FFFFFF00']} start={{ x: 0, y: 0 }} end={{ x: 0.3, y: 1 }} style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }} />
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+          <Ionicons name="storefront" size={15} color={c.text} /><Text style={[styles.value, { fontFamily: f.semibold }]}>SmartStore</Text>
+        </View>
+        <View style={{ gap: 4 }}>
+          <Text style={[styles.title, { fontSize: 30, lineHeight: 36 }]}>Chào mừng trở lại</Text>
+          <Text style={[styles.body, { color: '#59606B' }]}>Đăng nhập để xem tình trạng cửa hàng của bạn.</Text>
+        </View>
+      </LinearGradient>
       <Card>
         <Text style={styles.value}>Tên đăng nhập</Text>
         <TextInput style={input} value={username} onChangeText={setUsername} autoCapitalize="none" autoCorrect={false}
@@ -39,7 +45,7 @@ export default function LoginScreen() {
         {message ? <Text accessibilityLiveRegion="polite" style={{ color: CONFIG_ERROR || error ? c.red : c.amber, lineHeight: 21 }}>{message}</Text> : null}
         <Button title={busy ? 'Đang đăng nhập…' : 'Đăng nhập'} icon="log-in-outline" disabled={busy || !!CONFIG_ERROR} onPress={submit} />
       </Card>
-      <Text style={[styles.body, { textAlign: 'center', fontSize: 12 }]}>Backend: {API_URL || 'chưa cấu hình'}</Text>
+      <Text style={[styles.photoBody, { textAlign: 'center', fontSize: 12 }]}>Backend: {API_URL || 'chưa cấu hình'}</Text>
     </ScrollView>
   </KeyboardAvoidingView>;
 }
