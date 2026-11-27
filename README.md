@@ -1,249 +1,176 @@
-# SmartStore MQTT - ESP32 + Node.js + MongoDB + Expo Go
+# SmartStore — ESP32 + MQTT + Node.js + MongoDB + Expo
 
-## MODULE 01 — Khởi tạo cấu trúc dự án
-
-**Phạm vi:** chỉ bổ sung cấu trúc và tài liệu; không triển khai thêm MQTT,
-database, Socket.IO hoặc giao diện, không cài thư viện, chạy Docker hay nạp ESP32.
-Mã nguồn cũ bên dưới vẫn được bảo toàn, kể cả những chức năng đã có sẵn.
-
-### Kiến trúc và trạng thái thực tế
+Hệ thống giám sát cửa hàng nhỏ: ESP32 đọc nhiệt độ/độ ẩm (DHT22) và chuyển động (PIR),
+điều khiển 2 LED; backend lưu dữ liệu, sinh cảnh báo và đẩy realtime tới ứng dụng di động.
 
 ```text
-ESP32 (Arduino C++) <-- MQTT --> Mosquitto <-- MQTT.js --> Node.js / Express
-                                                            |       |
-                                                         MongoDB    REST / Socket.IO
-                                                                    |
-                                                             React Native / Expo
+ESP32 ──MQTT──> Mosquitto ──MQTT.js──> Backend (Express + Socket.IO) ──> MongoDB
+  ^                                          │
+  └──────── lệnh LED / ACK ──────────────────┤ REST + Socket.IO
+                                             v
+                                   Mobile (React Native / Expo)
 ```
 
-- ESP32 gửi telemetry và nhận lệnh qua broker.
-- Backend hiện dùng Express, MQTT.js, Mongoose (MongoDB), Socket.IO, CORS và dotenv,
-  đúng các dependency trong `D:\nam4\Develop_mobile\SmartStore\backend\package.json`.
-- Backend hiện vẫn chạy từ `D:\nam4\Develop_mobile\SmartStore\backend\index.js`;
-  các thư mục `backend/src` mới chỉ là khung, chưa được nối vào entry point.
-- Mobile hiện gọi REST theo chu kỳ 2 giây; **chưa dùng Socket.IO client**.
-- `D:\nam4\Develop_mobile\SmartStore\mobile\App.js` được giữ nguyên.
-  Thư mục mobile chưa có `package.json` hoặc cấu hình Expo, nên **chưa thể chạy
-  độc lập bằng Expo tại thư mục này**. Module này không tự tạo project Expo,
-  không chọn phiên bản SDK và không cài dependency.
-- Docker Compose hiện gắn cấu hình tại
-  `D:\nam4\Develop_mobile\SmartStore\mosquitto\config\mosquitto.conf`.
-  Thư mục `D:\nam4\Develop_mobile\SmartStore\mqtt\config` chỉ là khung theo
-  cấu trúc yêu cầu, **chưa được Compose sử dụng**. Không sao chép cấu hình broker
-  sang đó để tránh hai nguồn cấu hình; không đổi volume trong module này.
-- Thư mục gốc chưa có Git repository khi kiểm tra; module này không chạy `git init`.
-
-### Cây thư mục sau MODULE 01
-
-Gốc: `D:\nam4\Develop_mobile\SmartStore`. Đường dẫn trong cây dưới đây là
-tương đối so với gốc này; các thư mục `src` và `mqtt/config` chứa `.gitkeep`
-để có thể được lưu trong Git, không chứa logic.
+## Cấu trúc thư mục
 
 ```text
-SmartStore/
-├── .gitignore
-├── README.md
-├── docker-compose.yml                 # giữ nguyên
+.
+├── .env.example              # bí mật cho docker compose (sao chép thành .env)
+├── docker-compose.yml        # Mosquitto + MongoDB + backend
+├── mosquitto/config/         # mosquitto.conf + acl (passwd được tạo, không commit)
+├── scripts/mqtt-users.ps1    # tạo tài khoản MQTT
+├── backend/                  # Node.js (CommonJS), entry: src/server.js
+│   ├── src/{config,mqtt,routes,controllers,services,models,sockets}
+│   ├── Dockerfile
+│   ├── scripts/              # createUser.js + script kiểm tra thủ công
+│   └── test/                 # node --test
+├── mobile/                   # Expo SDK 58, entry: index.js → App.js
+│   ├── src/{screens,components,hooks,services,utils,constants}
+│   └── test/
 ├── esp32/
-│   └── esp32_smartstore_mqtt.ino        # giữ nguyên
-├── mosquitto/
-│   └── config/
-│       └── mosquitto.conf             # cấu hình đang được Compose tham chiếu
-├── mqtt/
-│   └── config/
-│       └── .gitkeep
-├── backend/
-│   ├── .env.example                   # đã có, giữ nguyên
-│   ├── index.js                       # entry point hiện có, giữ nguyên
-│   ├── package.json                   # giữ nguyên
-│   ├── package-lock.json              # giữ nguyên
-│   ├── node_modules/                  # đã có, không sửa; bỏ qua trong Git
-│   └── src/
-│       ├── config/.gitkeep
-│       ├── mqtt/.gitkeep
-│       ├── controllers/.gitkeep
-│       ├── routes/.gitkeep
-│       ├── models/.gitkeep
-│       ├── services/.gitkeep
-│       └── sockets/.gitkeep
-└── mobile/
-    ├── App.js                         # giữ nguyên
-    └── src/
-        ├── screens/.gitkeep
-        ├── components/.gitkeep
-        ├── services/.gitkeep
-        └── hooks/.gitkeep
+│   ├── esp32_smartstore_mqtt.ino   # firmware chính
+│   ├── esp32_smartstore_test.ino   # sketch kiểm tra phần cứng (không MQTT)
+│   ├── smartstore_config.example.h # mẫu cấu hình WiFi/MQTT
+│   ├── Prepare-MqttSketch.ps1      # tạo esp32/build/ để mở bằng Arduino IDE
+│   └── tests/                      # sketch chẩn đoán DHT11/DHT22
+└── docs/history/             # ghi chú các module/đợt phát triển trước (tham khảo)
 ```
 
-Vai trò dự kiến: `config` chứa cấu hình; `mqtt` xử lý kết nối/message broker;
-`controllers` xử lý request; `routes` khai báo endpoint; `models` chứa schema;
-`services` chứa nghiệp vụ; `sockets` xử lý realtime. Mobile tách `screens`,
-`components`, `services`, `hooks`. Chưa di chuyển code vào những thư mục này.
+## Chạy nhanh
 
-### Biến môi trường backend
+Yêu cầu: Node.js 22, Docker, Arduino IDE (hoặc arduino-cli) với core ESP32,
+thư viện `PubSubClient`, `DHT sensor library`, `ArduinoJson`; điện thoại cài Expo Go (SDK 58).
 
-File mẫu đã có tại `D:\nam4\Develop_mobile\SmartStore\backend\.env.example`:
-
-```dotenv
-PORT=3000
-MQTT_URL=mqtt://localhost:1883
-MONGO_URL=mongodb://127.0.0.1:27017/smartstore
-```
-
-Giữ đúng tên `MONGO_URL` vì entry point đang đọc biến này; không đổi thành
-`MONGODB_URI`. Không có mật khẩu thật trong file mẫu. `.env` và các biến thể
-cấu hình riêng được bỏ qua trong Git, còn `.env.example` vẫn được theo dõi.
-
-### Cách chạy từng thành phần — chỉ tham khảo, không thực hiện trong MODULE 01
-
-Các bước bên dưới mô tả bản demo **đang có**, không phải kết quả triển khai
-logic mới. Chỉ chạy khi chủ động kiểm thử tích hợp sau module này.
-
-1. **Mosquitto và MongoDB:** nếu đã có Docker Desktop hoạt động, chạy:
-
-   ```powershell
-   Set-Location -LiteralPath 'D:\nam4\Develop_mobile\SmartStore'
-   docker compose -f 'D:\nam4\Develop_mobile\SmartStore\docker-compose.yml' up -d
-   docker compose -f 'D:\nam4\Develop_mobile\SmartStore\docker-compose.yml' ps
-   ```
-
-   Compose hiện dùng Mosquitto 2 và MongoDB 7. Cấu hình hiện tại cho phép MQTT
-   anonymous và MongoDB không có xác thực; chỉ dùng môi trường demo được kiểm
-   soát, không công khai cổng 1883/27017 ra Internet.
-
-2. **Backend:** dependency và `node_modules` đã tồn tại; module này không cài lại.
-   Khi broker và MongoDB sẵn sàng:
-
-   ```powershell
-   Set-Location -LiteralPath 'D:\nam4\Develop_mobile\SmartStore\backend'
-   if (-not (Test-Path -LiteralPath 'D:\nam4\Develop_mobile\SmartStore\backend\.env')) {
-       Copy-Item -LiteralPath 'D:\nam4\Develop_mobile\SmartStore\backend\.env.example' -Destination 'D:\nam4\Develop_mobile\SmartStore\backend\.env'
-   }
-   npm start
-   ```
-
-   Backend đọc `.env` từ working directory nên cần đứng đúng thư mục backend.
-   Kiểm tra từ terminal khác bằng
-   `Invoke-RestMethod -Uri 'http://localhost:3000/api/health'`.
-   Không khẳng định MQTT/database đã kết nối nếu chưa thực sự chạy dịch vụ.
-
-3. **ESP32:** mở file
-   `D:\nam4\Develop_mobile\SmartStore\esp32\esp32_smartstore_mqtt.ino`
-   bằng Arduino IDE trong bước kiểm thử sau này. Mã hiện dùng `WiFi.h`,
-   `PubSubClient.h`, `DHT.h`. Cần board ESP32 và các thư viện tương ứng đã được
-   chuẩn bị trước khi build/upload. SSID/mật khẩu trong sketch hiện là giá trị
-   mẫu; không commit thông tin Wi-Fi thật. MQTT_HOST phải là IP LAN của máy
-   chạy broker, không phải localhost trên ESP32. Xem sơ đồ chân và các lưu ý
-   của tài liệu gốc bên dưới. Module này không chỉnh sketch hoặc upload.
-
-4. **Mobile:** hiện bị chặn bởi thiếu manifest/dependency Expo, vì vậy không
-   chạy `npx expo start` tại `D:\nam4\Develop_mobile\SmartStore\mobile` ngay.
-   Khi một module được yêu cầu riêng đã hoàn thiện cấu hình Expo tương thích
-   và dependency, có thể dùng lệnh sau (không thực hiện ở MODULE 01):
-
-   ```powershell
-   Set-Location -LiteralPath 'D:\nam4\Develop_mobile\SmartStore\mobile'
-   npx expo start
-   ```
-
-   Không tạo project Expo chồng lên mobile, không thay thế `App.js`. Điện thoại
-   cần truy cập được IP LAN của máy chạy backend trên cổng 3000.
-
-### Lệnh kiểm tra an toàn bằng PowerShell
-
-Không khởi chạy ứng dụng, không cần Docker hay tải package:
+### 1. Bí mật và tài khoản MQTT
 
 ```powershell
-Get-ChildItem -LiteralPath 'D:\nam4\Develop_mobile\SmartStore' -Force
-Get-ChildItem -LiteralPath 'D:\nam4\Develop_mobile\SmartStore\backend\src' -Force -Recurse
-Get-ChildItem -LiteralPath 'D:\nam4\Develop_mobile\SmartStore\mobile\src' -Force -Recurse
-Get-ChildItem -LiteralPath 'D:\nam4\Develop_mobile\SmartStore\mqtt' -Force -Recurse
-Get-Content -LiteralPath 'D:\nam4\Develop_mobile\SmartStore\backend\package.json' -Raw | ConvertFrom-Json
-Get-Content -LiteralPath 'D:\nam4\Develop_mobile\SmartStore\backend\.env.example'
-node --check 'D:\nam4\Develop_mobile\SmartStore\backend\index.js'
-Test-Path -LiteralPath 'D:\nam4\Develop_mobile\SmartStore\mobile\package.json' # False ở MODULE 01
+copy .env.example .env          # điền mật khẩu MQTT, JWT_SECRET, ADMIN_PASSWORD
+./scripts/mqtt-users.ps1        # tạo mosquitto/config/passwd (cần Docker)
 ```
 
-`node --check` chỉ kiểm tra cú pháp backend, không kiểm tra kết nối MQTT,
-MongoDB, Socket.IO hay tính chạy được của Expo. Không dùng `node --check` cho
-`App.js` có JSX. Chưa có test script trong backend để chạy unit test.
+Broker bắt buộc đăng nhập, mỗi tài khoản bị giới hạn topic bằng
+[`mosquitto/config/acl`](mosquitto/config/acl): `backend`, `esp32`, `healthcheck`.
+Vẫn chỉ dùng trong LAN — chưa bật TLS, không mở cổng 1883 ra Internet.
 
-### Danh sách thay đổi MODULE 01
+### 2a. Chạy không cần Docker (dev)
 
-- Tạo `D:\nam4\Develop_mobile\SmartStore\.gitignore`.
-- Tạo 12 file `.gitkeep` trong `mqtt/config`, 7 thư mục `backend/src`,
-  và 4 thư mục `mobile/src` như cây bên trên.
-- Chỉ bổ sung phần MODULE 01 vào `D:\nam4\Develop_mobile\SmartStore\README.md`.
-- Giữ nguyên `.env.example` đã hợp lệ; không tạo `.env`, manifest, dependency
-  hoặc logic mới; không xóa hay di chuyển file cũ.
-
----
-
-## Tài liệu demo gốc (giữ nguyên để tham khảo)
-
-**Lưu ý:** hướng dẫn tạo Expo/copy đè App.js, cài thư viện, chạy Docker và upload
-ở phần gốc sau đây không phải công việc của MODULE 01. Không thực hiện bước
-copy thay thế App.js trong cây dự án hiện tại. Ưu tiên trạng thái và các giới
-hạn đã nêu trong phần MODULE 01 ở trên.
-
-## 1. Wiring (keep existing connections)
-- PIR OUT -> GPIO35, VCC -> VIN/5V, GND -> GND
-- DHT11 3-pin + -> 3V3, OUT -> GPIO4, - -> GND
-- Green LED -> GPIO25 through 220-330 ohm resistor; cathode -> GND
-- Red LED -> GPIO26 through separate 220-330 ohm resistor; cathode -> GND
-
-## 2. Windows prerequisites
-- Node.js LTS, Docker Desktop with running engine, Arduino IDE, Expo Go on phone.
-- For local demo only: Mosquitto has anonymous access and MongoDB no password. Do not expose ports 1883/27017 to the internet. Secure them before any cloud deployment.
-
-## 3. Start broker + MongoDB
-In this folder:
 ```powershell
-docker compose up -d
+cd backend; npm install
+npm run dev:stack     # terminal 1: MQTT broker (aedes, có đăng nhập + ACL) + MongoDB, dữ liệu ở .dev-data/
+npm start             # terminal 2: backend (backend/.env: MQTT_URL=mqtt://127.0.0.1:1883)
+npm run dev:esp32     # terminal 3 (tùy chọn): giả lập ESP32 khi không có mạch thật
 ```
-Check: `docker compose ps`
 
-## 4. Start backend
+`dev:stack` đọc mật khẩu `MQTT_<USER>_PASSWORD` trong `.env` gốc và quyền topic trong
+`mosquitto/config/acl`, nên hành vi giống Mosquitto thật. Lần đầu sẽ tải MongoDB (~600MB).
+`SIM_HOT=1 npm run dev:esp32` gửi nhiệt độ cao để thử cảnh báo.
+
+### 2. Chạy bằng Docker
+
 ```powershell
+docker compose up -d --build    # mqtt + mongo + backend
+docker compose logs -f backend
+```
+
+Lần chạy đầu, nếu database chưa có người dùng, backend tạo tài khoản admin từ
+`ADMIN_USERNAME` / `ADMIN_PASSWORD`.
+
+### 2b. Hoặc chạy backend trực tiếp
+
+```powershell
+docker compose up -d mqtt mongo
 cd backend
-copy .env.example .env
+copy .env.example .env   # MQTT_URL, MQTT_PASSWORD, JWT_SECRET, ADMIN_PASSWORD…
 npm install
-npm start
+npm run dev
 ```
-Open `http://localhost:3000/api/health` on computer. It should show mqtt and database true.
 
-## 5. ESP32
-- Arduino IDE Library Manager: install `PubSubClient` by Nick O'Leary, `DHT sensor library` by Adafruit, `Adafruit Unified Sensor`.
-- Windows terminal `ipconfig`: find IPv4 address of the Wi-Fi/LAN adapter on the same network as ESP32 and phone (example 192.168.1.10).
-- In `esp32/esp32_smartstore_mqtt.ino`, set WIFI_SSID, WIFI_PASSWORD, MQTT_HOST to that IPv4 address.
-- Upload. Serial Monitor 115200. PIR can require 30-60 seconds to stabilize.
-- Allow inbound TCP 1883 (Mosquitto) and 3000 (backend) in Windows Firewall on **Private** network only.
+| Biến | Ý nghĩa |
+| --- | --- |
+| `PORT` | Cổng HTTP/Socket.IO (mặc định 3000) |
+| `MQTT_URL` | `mqtt://<ip-broker>:1883` |
+| `MQTT_USERNAME` / `MQTT_PASSWORD` | Tài khoản `backend` của broker |
+| `MQTT_TOPIC` | Phải là `smartstore/sensors/data` |
+| `MONGO_URI` | `mongodb://127.0.0.1:27017/smartstore` |
+| `JWT_SECRET` | **Bắt buộc**, ≥ 32 ký tự ngẫu nhiên |
+| `JWT_EXPIRES_IN` | Thời hạn token (mặc định `12h`) |
+| `ADMIN_USERNAME` / `ADMIN_PASSWORD` | Admin đầu tiên, chỉ dùng khi chưa có người dùng |
+| `LAN_ONLY_WRITES` | `true` (mặc định): thao tác ghi chỉ từ IP LAN/private |
+| `TRUST_PROXY` | `true` khi chạy sau reverse proxy |
+| `CORS_ORIGIN` | Danh sách origin, phân tách bằng dấu phẩy; bắt buộc khi `NODE_ENV=production` |
+| `DEBUG_SENSOR` | `true` để log từng bản ghi đã lưu |
 
-## 6. Mobile Expo (iPhone or Android)
+Kiểm tra: `GET http://<ip>:<port>/api/health`.
+
+### Người dùng và phân quyền
+
+| Vai trò | Quyền |
+| --- | --- |
+| `admin` | Xem mọi dữ liệu, điều khiển LED, sửa cấu hình cảnh báo, xác nhận/xóa cảnh báo, đổi chế độ cửa hàng |
+| `viewer` | Chỉ xem |
+
+Thêm hoặc đổi mật khẩu người dùng (đổi mật khẩu sẽ đăng xuất các phiên cũ):
+
 ```powershell
-npx create-expo-app@latest SmartStore --template blank
-cd SmartStore
+cd backend; $env:USER_PASSWORD='mat-khau-manh'; npm run user:create -- nhanvien1 viewer; Remove-Item Env:USER_PASSWORD
 ```
-Copy `mobile/App.js` from this archive to `SmartStore/App.js` (replace it), then:
+
+Mọi thao tác ghi còn bị giới hạn 60 lần/phút cho mỗi người dùng; đăng nhập sai
+quá 10 lần/15 phút cho mỗi IP sẽ bị chặn tạm thời.
+
+### 3. Firmware ESP32
+
+1. Sao chép `esp32/smartstore_config.example.h` thành `esp32/smartstore_config.h`
+   và điền WiFi, IP LAN của máy chạy broker, mật khẩu MQTT của user `esp32`
+   (file này đã được gitignore).
+2. Chạy `esp32/Prepare-MqttSketch.ps1`, mở sketch trong `esp32/build/esp32_smartstore_mqtt/` và nạp.
+
+Chân: DHT22 → GPIO 4, PIR → GPIO 35, LED xanh → GPIO 25, LED đỏ → GPIO 26.
+
+### 4. Mobile
+
 ```powershell
-npx expo start
+cd mobile
+copy .env.example .env   # EXPO_PUBLIC_API_URL=http://<ip-LAN-máy-backend>:<port>
+npm install
+npx expo start --lan
 ```
-Scan QR with iPhone Camera to open Expo Go. Enter **computer's IPv4**, not ESP32 IP, in SmartStore and tap Connect.
-Phone and computer must be able to communicate on the same LAN. On iOS grant Local Network permission. For Expo QR issues try `npx expo start --tunnel` (this doesn't tunnel the backend API).
 
-## 7. API / MQTT
-- ESP32 publishes `smartstore/telemetry` every 2 seconds
-- Backend subscribes, stores readings in MongoDB, emits Socket.IO event `telemetry`, exposes REST:
-  - `GET /api/health`
-  - `GET /api/latest`
-  - `GET /api/history` (last 50 records)
-  - `POST /api/led` body `{ "mode": "auto" | "green" | "red" | "off" }`
-- Backend publishes commands on `smartstore/command`.
-- App currently polls REST every 2 seconds (easy Expo Go setup). Backend Socket.IO can be used for a future push realtime version.
+Điện thoại thật phải dùng IP LAN, không dùng `localhost`. Không đặt bí mật vào
+biến `EXPO_PUBLIC_*` vì chúng nằm trong bundle.
 
-## Troubleshooting
-- API shows mqtt=false: `docker compose ps`, inspect broker logs.
-- API shows database=false: inspect Mongo logs, check port 27017.
-- App says network request failed: use PC's correct IPv4, check Windows Firewall, test `http://PC_IP:3000/api/health` in phone Safari/Chrome, verify same LAN.
-- ESP32 not publishing: check 2.4 GHz Wi-Fi, broker PC IP, firewall 1883, serial output.
-- Security: this is a classroom LAN demo. Add MQTT credentials, DB auth, API auth, TLS and proper firewall before internet/cloud use.
+## MQTT topics
+
+| Topic | Hướng | Nội dung |
+| --- | --- | --- |
+| `smartstore/sensors/data` | ESP32 → backend | `temperature`, `humidity`, `motion`, `ledGreen`, `ledRed`, `mode`, `controlSession`, … |
+| `smartstore/led/command` | backend → ESP32 | `{ mode: "auto" \| "manual", ledGreen?, ledRed?, requestId, controlSession }` |
+| `smartstore/led/ack` | ESP32 → backend | Kết quả áp dụng lệnh theo `requestId` |
+
+## API chính
+
+Trừ `/api/health` và `/api/auth/login`, mọi endpoint cần header `Authorization: Bearer <token>`;
+mọi thao tác ghi cần vai trò `admin`.
+
+- `POST /api/auth/login` `{ username, password }` → `{ token, user }`, `GET /api/auth/me`
+- `GET /api/health`
+- `GET /api/sensors/latest | history | stats | report | motion`
+- `GET /api/alerts`, `/api/alerts/active`, `/api/alerts/stats`
+- `PATCH /api/alerts/:id/acknowledge`, `DELETE /api/alerts/:id` *(admin)*
+- `GET|PUT /api/alert-settings` *(PUT: admin)*
+- `GET /api/store-watch`, `PUT /api/store-watch/mode`, `PATCH /api/store-watch/incidents/:id` *(ghi: admin)*
+
+Sự kiện Socket.IO: `sensor:latest`, `sensor:update`, `sensor:quality`, `system:status`,
+`led:state`, `led:result`, `alert:*`, `store:changed`; client gửi `led:command` (chỉ admin).
+Token gửi khi kết nối: `io(url, { auth: { token } })`; token sai → `connect_error` `INVALID_TOKEN`.
+
+## Kiểm thử
+
+```powershell
+cd backend; npm test
+cd mobile; npm test
+```
+
+Một số test backend cần MongoDB thật và sẽ tự bỏ qua nếu không có.
+GitHub Actions ([.github/workflows/ci.yml](.github/workflows/ci.yml)) chạy test backend (kèm MongoDB),
+test + bundle mobile, build Docker image và biên dịch firmware ESP32.

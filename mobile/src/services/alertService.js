@@ -1,5 +1,6 @@
 import { API_URL, CONFIG_ERROR } from '../constants/config.js';
 import { rangeQuery } from '../utils/timeRange.js';
+import { authHeaders, session } from './session.js';
 async function request(path, method = 'GET', data, signal) {
   if (CONFIG_ERROR) throw new Error(CONFIG_ERROR);
   const controller = new AbortController();
@@ -8,8 +9,9 @@ async function request(path, method = 'GET', data, signal) {
   const timer = setTimeout(abort, 8000);
   try {
     const response = await fetch(`${API_URL}/api/${path}`, { method, signal: controller.signal,
-      headers: { 'Content-Type': 'application/json' }, ...(data !== undefined ? { body: JSON.stringify(data) } : {}) });
+      headers: authHeaders({ 'Content-Type': 'application/json' }), ...(data !== undefined ? { body: JSON.stringify(data) } : {}) });
     const body = await response.json();
+    if (response.status === 401) session.expire();
     if (!response.ok || body.success !== true) throw new Error(body.error?.message || `Lỗi dịch vụ cảnh báo (${response.status}).`);
     return body;
   } catch (error) {

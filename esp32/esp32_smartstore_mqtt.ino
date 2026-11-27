@@ -255,8 +255,11 @@ void connectMQTT() {
   attempted = true;
   lastAttempt = now;
   Serial.printf("[MQTT] Ket noi %s:%u | ID=%s\n", MQTT_HOST, MQTT_PORT, clientId);
-  // Broker MODULE 03 anonymous. Có thể dùng overload username/password sau này.
-  if (mqttClient.connect(clientId)) {
+  // Broker yêu cầu tài khoản (mosquitto/config/acl). Để trống MQTT_USERNAME = ẩn danh.
+  const bool connected = strlen(MQTT_USERNAME) > 0
+      ? mqttClient.connect(clientId, MQTT_USERNAME, MQTT_PASSWORD)
+      : mqttClient.connect(clientId);
+  if (connected) {
     portENTER_CRITICAL(&connectionMux);
     snprintf(controlSession, sizeof(controlSession), "%08lx%08lx", static_cast<unsigned long>(esp_random()), static_cast<unsigned long>(esp_random()));
     portEXIT_CRITICAL(&connectionMux);
@@ -360,7 +363,7 @@ void setup() {
       static_cast<unsigned int>((chipId >> 32) & 0xFFFF),
       static_cast<unsigned long>(chipId & 0xFFFFFFFF));
   IPAddress broker;
-  networkConfigured = strlen(WIFI_SSID) > 0 && MQTT_PORT == 1883 &&
+  networkConfigured = strlen(WIFI_SSID) > 0 && MQTT_PORT > 0 &&
       broker.fromString(MQTT_HOST) && broker[0] != 0 && broker[0] != 127 &&
       broker[0] < 224 && static_cast<uint32_t>(broker) != 0xFFFFFFFF;
   Serial.println("\n=== SmartStore MODULE 08 / M08-LED-ACK ===");

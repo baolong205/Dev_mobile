@@ -17,7 +17,8 @@ const reading = { temperature: null, humidity: 24.8, motion: false, ledGreen: fa
   ledRed: true, receivedAt: '2026-11-13T15:48:53.734Z' };
 
 test('production CORS requires explicit origins; development supports opt-in allowlist', () => {
-  const env = { MQTT_URL: 'mqtt://localhost:1883', MONGO_URI: 'mongodb://localhost/test' };
+  const env = { MQTT_URL: 'mqtt://localhost:1883', MONGO_URI: 'mongodb://localhost/test', JWT_SECRET: 'x'.repeat(32) };
+  assert.throws(() => loadConfig({ ...env, JWT_SECRET: 'short' }), /JWT_SECRET/);
   assert.equal(loadConfig(env).cors.origin, true);
   assert.throws(() => loadConfig({ ...env, NODE_ENV: 'production' }));
   assert.throws(() => loadConfig({ ...env, NODE_ENV: 'production', CORS_ORIGIN: '*' }));

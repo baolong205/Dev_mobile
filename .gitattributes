@@ -1,0 +1,6 @@
+* text=auto
+# Files read inside Linux containers must keep LF line endings.
+mosquitto/config/* text eol=lf
+Dockerfile text eol=lf
+*.sh text eol=lf
+*.yml text eol=lf

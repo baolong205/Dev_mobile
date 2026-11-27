@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { AppState } from 'react-native';
 import { api } from '../services/apiService';
 import { getSocket } from '../services/socketService';
+import { session } from '../services/session';
 import { CONFIG_ERROR, STALE_MS } from '../constants/config';
 import { isStale, mergeReading, normalizeStatus } from '../utils/formatSensor';
 import { normalizeLedState, canControlLed } from '../utils/ledState';
@@ -112,7 +113,8 @@ export function useSmartStoreSocket() {
       statusRevision.current++; setConnection('disconnected'); setSystem(null); setBackendReachable(null);
       setSocketError('Kết nối realtime đã ngắt. Đang chờ kết nối lại.');
     };
-    const failed = () => {
+    const failed = err => {
+      if (['AUTH_REQUIRED', 'INVALID_TOKEN'].includes(err?.message)) { session.expire(); return; }
       setLedState(null);
       statusRevision.current++; setConnection('reconnecting'); setSystem(null); setBackendReachable(null);
       setSocketError('Chưa kết nối được realtime. Ứng dụng sẽ tự thử lại.');

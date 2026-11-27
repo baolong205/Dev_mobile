@@ -6,7 +6,7 @@ function toReading(record) {
     .map(key => [key, key === 'receivedAt' ? new Date(record[key]).toISOString() : record[key]]));
 }
 
-function createSocketServer(httpServer, { cors, getStatus, getLatest, database, leds, getQuality = () => null }) {
+function createSocketServer(httpServer, { cors, getStatus, getLatest, database, leds, getQuality = () => null, auth }) {
   if (instances.has(httpServer)) throw new Error('Socket.IO already attached to HTTP server');
   const io = new Server(httpServer, {
     maxHttpBufferSize: 8192,
@@ -16,6 +16,15 @@ function createSocketServer(httpServer, { cors, getStatus, getLatest, database, 
       (Array.isArray(cors.origin) && cors.origin.includes(req.headers.origin)))
   });
   instances.set(httpServer, io);
+  if (auth) {
+    // Client gửi token qua io(url, { auth: { token } }). Sai token => connect_error.
+    io.use((socket, next) => {
+      const token = socket.handshake.auth?.token;
+      if (typeof token !== 'string' || !token) return next(Object.assign(new Error('AUTH_REQUIRED'), { data: { code: 'AUTH_REQUIRED' } }));
+      auth.verify(token).then(user => { socket.data.user = user; next(); },
+        () => next(Object.assign(new Error('INVALID_TOKEN'), { data: { code: 'INVALID_TOKEN' } })));
+    });
+  }
   let latest = null;
   let lastStatus = '';
   let closed = false;
@@ -37,6 +46,11 @@ function createSocketServer(httpServer, { cors, getStatus, getLatest, database, 
     socket.on('led:command', async (payload, accepted) => {
       // Bound concurrency before allocating promises for untrusted incoming packets.
       if (!leds || commandInFlight) return;
+      if (auth && socket.data.user?.role !== 'admin') {
+        if (typeof accepted === 'function') accepted({ requestId: null });
+        socket.emit('led:result', { requestId: null, status: 'rejected', message: 'Chỉ tài khoản admin được điều khiển LED.', mode: null, ledGreen: null, ledRed: null });
+        return;
+      }
       commandInFlight = true;
       try {
         const result = await leds.request(socket.id, socket.handshake.address, payload,

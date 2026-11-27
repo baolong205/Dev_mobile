@@ -11,6 +11,7 @@ function startMqtt(config, { onReading = () => {}, onStatusChange = () => {}, on
   const counters = { received: 0, saved: 0, rejected: 0, saveFailed: 0 };
   const client = connect(config.mqttUrl, {
     clientId: `smartstore-backend-${process.pid}-${crypto.randomBytes(4).toString('hex')}`,
+    username: config.mqttUsername, password: config.mqttPassword,
     reconnectPeriod: 3000, connectTimeout: 5000, clean: true, resubscribe: false, queueQoSZero: false
   });
   const leds = createLedService({

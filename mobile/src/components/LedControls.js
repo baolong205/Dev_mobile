@@ -3,11 +3,14 @@ import { Switch, Text, View } from 'react-native';
 import { Badge, Button, Card, Row, styles } from './Common';
 import { formatTime } from '../utils/formatSensor';
 import { colors as c } from '../constants/theme';
+import { useAuth } from '../hooks/AuthContext';
 export default function LedControls({ state }) {
   const { ledState, controlReady, commandPending, commandMessage, sendLedCommand } = state;
-  const disabled = !controlReady || commandPending;
+  const { isAdmin } = useAuth();
+  const disabled = !isAdmin || !controlReady || commandPending;
   return <Card><Text style={styles.heading}>Điều khiển thiết bị</Text>
     <Badge label={!ledState ? 'Đang chờ trạng thái từ ESP32' : `Chế độ gần nhất: ${ledState.mode === 'auto' ? 'Tự động (AUTO)' : 'Thủ công (MANUAL)'}`} tone={controlReady ? 'green' : 'amber'} />
+    {!isAdmin ? <Text style={styles.body}>Chỉ tài khoản admin được điều khiển LED.</Text> : null}
     <Text style={styles.body}>{controlReady ? 'ESP32 vừa gửi trạng thái — có thể điều khiển' : 'Chưa xác nhận ESP32 đang sẵn sàng. Điều khiển đã khóa.'}</Text>
     <View style={{ gap: 10 }}>
       <Button title="Tự động (AUTO)" icon="flash-outline" variant={ledState?.mode === 'auto' ? 'primary' : 'secondary'} disabled={disabled || ledState?.mode === 'auto'} onPress={() => sendLedCommand({ mode: 'auto' })} />

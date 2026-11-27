@@ -12,10 +12,23 @@ import BottomTabBar from './src/components/BottomTabBar';
 import AlertScreen from './src/screens/AlertScreen';
 import AlertNotice from './src/components/AlertNotice';
 import { colors as c } from './src/constants/theme';
+import { AuthProvider, useAuth } from './src/hooks/AuthContext';
+import LoginScreen from './src/screens/LoginScreen';
+import { ActivityIndicator, View } from 'react-native';
 const Tabs = createBottomTabNavigator();
 const navigationRef = createNavigationContainerRef();
 export default function App() {
-  return <SafeAreaProvider><StatusBar style="dark" /><SmartStoreProvider>
+  return <SafeAreaProvider><StatusBar style="dark" /><AuthProvider><AuthGate /></AuthProvider></SafeAreaProvider>;
+}
+function AuthGate() {
+  const { user, restoring } = useAuth();
+  if (restoring) return <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: c.background }}><ActivityIndicator color={c.primary} /></View>;
+  if (!user) return <SafeAreaView style={{ flex: 1, backgroundColor: c.background }}><LoginScreen /></SafeAreaView>;
+  // Chỉ mở socket/REST sau khi đã có token.
+  return <MainApp key={user.id} />;
+}
+function MainApp() {
+  return <SmartStoreProvider>
     <SafeAreaView edges={['top', 'left', 'right']} style={{ flex: 1, backgroundColor: c.background }}>
       <NavigationContainer ref={navigationRef} theme={{ ...DefaultTheme, colors: { ...DefaultTheme.colors, primary: c.primary, background: c.background, card: c.card, text: c.text, border: c.border } }}><Tabs.Navigator tabBar={props => <BottomTabBar {...props} />} screenOptions={{ headerShown: false }}>
         <Tabs.Screen name="Dashboard" component={DashboardScreen} options={{ title: 'Trang chủ' }} />
@@ -29,5 +42,5 @@ export default function App() {
         navigationRef.navigate(['motion', 'deviceOffline'].includes(notice?.type) ? 'Dashboard' : 'Alerts'); return true;
       }} />
     </SafeAreaView>
-  </SmartStoreProvider></SafeAreaProvider>;
+  </SmartStoreProvider>;
 }
