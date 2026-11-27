@@ -127,6 +127,31 @@ quá 10 lần/15 phút cho mỗi IP sẽ bị chặn tạm thời.
 
 Chân: DHT22 → GPIO 4, PIR → GPIO 35, LED xanh → GPIO 25, LED đỏ → GPIO 26.
 
+### 3b. Mô phỏng mạch trên Wokwi
+
+Sơ đồ mạch nằm trong [esp32/wokwi](esp32/wokwi):
+
+| Linh kiện | Chân linh kiện | Chân ESP32 |
+| --- | --- | --- |
+| DHT22 | VCC / SDA / GND | 3V3 / GPIO4 / GND |
+| PIR HC-SR501 | VCC / OUT / GND | 5V / GPIO35 / GND |
+| LED xanh + điện trở 220Ω | A (qua điện trở) / C | GPIO25 / GND |
+| LED đỏ + điện trở 220Ω | A (qua điện trở) / C | GPIO26 / GND |
+
+**Trên wokwi.com** (không cần cài gì):
+1. Mở https://wokwi.com/projects/new/esp32.
+2. Dán nội dung `esp32/wokwi/diagram.json` vào tab `diagram.json`.
+3. Tab `Library Manager` → thêm các thư viện trong `esp32/wokwi/libraries.txt`.
+4. Dán `esp32/esp32_smartstore_mqtt.ino` vào `sketch.ino`, rồi thay dòng `#include "smartstore_config.h"`
+   bằng nội dung của `esp32/wokwi/smartstore_config.wokwi.h`.
+5. Bấm chạy. Bấm vào cảm biến PIR → *Simulate motion* để thử đèn; bấm DHT22 để đổi nhiệt độ/độ ẩm.
+
+**Trong VS Code** (extension *Wokwi Simulator*): chạy `esp32/wokwi/Build-WokwiFirmware.ps1`, mở thư mục
+`esp32/wokwi` và chọn *Wokwi: Start Simulator*.
+
+Cấu hình mô phỏng để trống WiFi/MQTT nên firmware chỉ chạy phần cảm biến và đèn. Wokwi chạy trên
+đám mây nên không kết nối được tới broker trong mạng LAN của bạn.
+
 ### 4. Mobile
 
 ```powershell

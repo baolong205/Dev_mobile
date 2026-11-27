@@ -57,3 +57,6 @@ Desktop.ini
 *.swo
 # Dữ liệu của dev stack không Docker (backend/scripts/devStack.js)
 .dev-data/
+
+# Firmware build output for the Wokwi VS Code simulator
+esp32/wokwi/build/

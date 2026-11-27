@@ -1,0 +1,7 @@
+# Dùng với extension "Wokwi Simulator" trong VS Code.
+# Biên dịch trước bằng esp32/wokwi/Build-WokwiFirmware.ps1 (arduino-cli), rồi chạy
+# lệnh "Wokwi: Start Simulator" khi mở thư mục esp32/wokwi.
+[wokwi]
+version = 1
+firmware = 'build/esp32_smartstore_mqtt.ino.merged.bin'
+elf = 'build/esp32_smartstore_mqtt.ino.elf'
